@@ -1,0 +1,184 @@
+<div class="countries-container">
+  <div class="countries-header">
+    <h2>Gestión de Países</h2>
+    <button class="btn btn-primary" (click)="openCreateForm()">
+      <i class="pi pi-plus"></i> Nuevo País
+    </button>
+  </div>
+
+  @if (currentError) {
+    <div class="alert alert-error">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ currentError }}
+    </div>
+  }
+
+  <!-- Búsqueda -->
+  <div class="search-section">
+    <div class="search-input-group">
+      <input 
+        type="text" 
+        [value]="searchTerm()"
+        (input)="onSearchTermChange($any($event.target).value)"
+        placeholder="Buscar por descripción..."
+        (keyup.enter)="search()"
+        class="search-input">
+      <button class="btn btn-secondary" (click)="search()">
+        <i class="pi pi-search"></i> Buscar
+      </button>
+      @if (searchTerm()) {
+        <button class="btn btn-link" (click)="clearSearch()">
+          <i class="pi pi-times"></i> Limpiar
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Tabla de países -->
+  <div class="table-container">
+    @if (countriesState$ | async; as state) {
+      @if (state.error && state.countries.length === 0) {
+        <div class="empty-state error-state">
+          <i class="pi pi-exclamation-triangle"></i>
+          <p>{{ state.error }}</p>
+          <button class="btn btn-primary" (click)="loadCountries()">
+            <i class="pi pi-refresh"></i> Reintentar
+          </button>
+        </div>
+      } @else if (state.countries.length === 0) {
+        <div class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>No se encontraron países</p>
+        </div>
+      } @else {
+        <table class="countries-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Código ISO</th>
+              <th>Zona Horaria</th>
+              <th>Idioma</th>
+              <th>Moneda</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (country of state.countries; track country.countryId) {
+              <tr>
+                <td>{{ country.countryId }}</td>
+                <td>{{ country.name || '-' }}</td>
+                <td>{{ country.description || '-' }}</td>
+                <td>{{ country.isoCode || '-' }}</td>
+                <td>{{ country.timezone || '-' }}</td>
+                <td>{{ country.lang || '-' }}</td>
+                <td>{{ country.currency || '-' }}</td>
+                <td class="actions">
+                  <button 
+                    class="btn btn-icon btn-edit" 
+                    (click)="openEditForm(country)"
+                    title="Editar">
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button 
+                    class="btn btn-icon btn-delete" 
+                    (click)="deleteCountry(country)"
+                    title="Eliminar">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+  </div>
+
+  <!-- Modal de formulario -->
+  @if (showForm()) {
+    <div class="modal-overlay" (click)="closeForm()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditing ? 'Editar País' : 'Nuevo País' }}</h3>
+          <button class="btn btn-icon" (click)="closeForm()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <form [formGroup]="countryForm" (ngSubmit)="saveCountry()" class="modal-body">
+          <div class="form-group">
+            <label for="name">Nombre *</label>
+            <input 
+              id="name" 
+              type="text" 
+              formControlName="name" 
+              class="form-control"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descripción</label>
+            <input 
+              id="description" 
+              type="text" 
+              formControlName="description" 
+              class="form-control">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="isoCode">Código ISO</label>
+              <input 
+                id="isoCode" 
+                type="text" 
+                formControlName="isoCode" 
+                class="form-control"
+                maxlength="5">
+            </div>
+
+            <div class="form-group">
+              <label for="timezone">Zona Horaria</label>
+              <input 
+                id="timezone" 
+                type="text" 
+                formControlName="timezone" 
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lang">Idioma</label>
+              <input 
+                id="lang" 
+                type="text" 
+                formControlName="lang" 
+                class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="currency">Moneda</label>
+              <input 
+                id="currency" 
+                type="text" 
+                formControlName="currency" 
+                class="form-control"
+                maxlength="10">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeForm()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="countryForm.invalid">
+              {{ isEditing ? 'Actualizar' : 'Crear' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
+

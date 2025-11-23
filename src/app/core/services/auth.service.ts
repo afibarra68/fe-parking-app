@@ -86,15 +86,34 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    try {
+      return localStorage.getItem(this.tokenKey);
+    } catch (error) {
+      console.warn('Error getting token from localStorage:', error);
+      return null;
+    }
   }
 
   getUserData(): any {
-    const userData = localStorage.getItem(this.userKey);
-    return userData ? JSON.parse(userData) : null;
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    try {
+      const userData = localStorage.getItem(this.userKey);
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.warn('Error getting user data from localStorage:', error);
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return false;
+    }
     return !!this.getToken();
   }
 

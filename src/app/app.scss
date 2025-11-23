@@ -1,0 +1,19 @@
+.main-content {
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+
+  &.sidebar-collapsed {
+    margin-left: 60px;
+  }
+
+  &.sidebar-closed {
+    margin-left: 0;
+  }
+
+  &.sidebar-open {
+    margin-left: 250px;
+  }
+}
+

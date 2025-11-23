@@ -1,0 +1,47 @@
+@if (isAuthenticated) {
+  <aside 
+    class="sidebar" 
+    [class.collapsed]="isCollapsed"
+    [class.closed]="isClosed">
+    <div class="sidebar-header">
+      <h3 class="sidebar-title">Menú</h3>
+      <div class="sidebar-actions">
+        <button 
+          class="sidebar-toggle" 
+          (click)="toggleCollapse()"
+          [attr.aria-label]="isCollapsed ? 'Expandir menú' : 'Colapsar menú'"
+          [title]="isCollapsed ? 'Expandir' : 'Colapsar'"
+          type="button">
+          <i [class]="isCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'"></i>
+        </button>
+        <button 
+          class="sidebar-close" 
+          (click)="toggleSidebar()"
+          aria-label="Cerrar menú"
+          title="Cerrar menú"
+          type="button">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      @if (loading) {
+        <app-menu-loader></app-menu-loader>
+      } @else {
+        <app-dynamic-menu [items]="displayMenuItems" [collapsed]="isCollapsed"></app-dynamic-menu>
+      }
+    </nav>
+  </aside>
+  
+  <!-- Botón flotante para abrir el menú cuando está cerrado -->
+  @if (isClosed) {
+    <button 
+      class="sidebar-open-btn" 
+      (click)="toggleSidebar()"
+      [attr.aria-label]="'Abrir menú'"
+      title="Abrir menú">
+      <i class="pi pi-bars"></i>
+    </button>
+  }
+}
+

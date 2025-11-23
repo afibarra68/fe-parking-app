@@ -35,7 +35,7 @@ export class LoginComponent {
     this.auth.login(credentials).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/administration/countries']);
       },
       error: (err) => {
         this.loading = false;

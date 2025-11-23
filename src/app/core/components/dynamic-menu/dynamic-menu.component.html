@@ -1,0 +1,50 @@
+<ul class="menu-list" [class.level-0]="level === 0" [class.collapsed]="collapsed">
+  @for (item of items; track item.id) {
+    @if (isVisible(item)) {
+      <li class="menu-item" [class.has-children]="hasChildren(item)" [class.expanded]="isExpanded(item.id)">
+        @if (hasChildren(item)) {
+          <div 
+            class="menu-item-header" 
+            (click)="toggleItem(item.id)"
+            [class.active]="isExpanded(item.id)">
+            @if (item.icon && !collapsed) {
+              <i [class]="item.icon"></i>
+            }
+            @if (!collapsed) {
+              <span class="menu-label">{{ item.label }}</span>
+            }
+            @if (!collapsed) {
+              <i class="pi pi-chevron-down menu-arrow"></i>
+            }
+          </div>
+          @if (isExpanded(item.id) && !collapsed) {
+            <app-dynamic-menu 
+              [items]="item.children!" 
+              [collapsed]="collapsed"
+              [level]="level + 1">
+            </app-dynamic-menu>
+          }
+        } @else {
+          <a 
+            [routerLink]="item.routerLink" 
+            routerLinkActive="active"
+            class="menu-link"
+            [class.collapsed]="collapsed">
+            @if (item.icon) {
+              <i [class]="item.icon"></i>
+            }
+            @if (!collapsed) {
+              <span class="menu-label">{{ item.label }}</span>
+            }
+            @if (item.badge && !collapsed) {
+              <span class="menu-badge" [class]="item.badgeClass || 'badge-default'">
+                {{ item.badge }}
+              </span>
+            }
+          </a>
+        }
+      </li>
+    }
+  }
+</ul>
+

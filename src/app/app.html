@@ -1,1 +1,7 @@
-<router-outlet />
+<app-sidebar 
+  [useMenuService]="true"
+  (sidebarStateChange)="onSidebarStateChange($event)">
+</app-sidebar>
+<div class="main-content" [class.sidebar-open]="sidebarOpen" [class.sidebar-collapsed]="sidebarCollapsed" [class.sidebar-closed]="sidebarClosed">
+  <router-outlet />
+</div>
