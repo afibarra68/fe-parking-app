@@ -110,5 +110,11 @@ export class TableComponent {
   checkEmpty(value: any): string {
     return value !== null && value !== undefined ? String(value) : '-';
   }
+
+  getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, prop) => {
+      return current && current[prop] !== undefined ? current[prop] : null;
+    }, obj);
+  }
 }
 

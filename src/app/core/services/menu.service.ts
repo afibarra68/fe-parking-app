@@ -13,6 +13,12 @@ export class MenuService {
       visible: true
     },
     {
+      label: 'Empresas',
+      icon: 'pi pi-building',
+      routerLink: '/administration/companies',
+      visible: true
+    },
+    {
       label: 'Clientes',
       icon: 'pi pi-users',
       routerLink: '/administration/clients',

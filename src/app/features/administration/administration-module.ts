@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AdministrationRoutingModule } from './administration-routing-module';
 import { CountriesComponent } from './countries/countries.component';
 import { ClientsComponent } from './clients/clients.component';
+import { CompaniesComponent } from './companies/companies.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -13,6 +14,7 @@ import { SharedModule } from '../../shared/shared-module';
     CommonModule,
     AdministrationRoutingModule,
     CountriesComponent,
+    CompaniesComponent,
     ClientsComponent,
     SharedModule
   ],
