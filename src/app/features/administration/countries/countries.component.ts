@@ -33,6 +33,10 @@ export class CountriesComponent implements OnInit, OnDestroy {
   editingCountry: Country | null = null;
   error: string | null = null;
   searchDescription = '';
+  searchName = '';
+  currentPage = 0;
+  pageSize = 10;
+  totalRecords = 0;
   private subscription?: Subscription;
 
   // Configuración de columnas para la tabla
@@ -70,10 +74,10 @@ export class CountriesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadCountries();
+    this.loadCountries(0, this.pageSize);
   }
 
-  loadCountries(): void {
+  loadCountries(page: number = 0, size: number = 10): void {
     // Cancelar suscripción anterior si existe
     if (this.subscription) {
       this.subscription.unsubscribe();
@@ -82,18 +86,22 @@ export class CountriesComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
     const description = this.searchDescription.trim() || undefined;
+    const name = this.searchName.trim() || undefined;
     
-    this.subscription = this.countryService.getCountries(undefined, description)
+    this.subscription = this.countryService.getCountriesPageable(page, size, undefined, description, name)
       .pipe(
         timeout(30000) // Timeout de 30 segundos
       )
       .subscribe({
-        next: (data) => {
-          this.countries = Array.isArray(data) ? data : [];
+        next: (response) => {
+          this.countries = Array.isArray(response.content) ? response.content : [];
+          this.totalRecords = response.totalElements || 0;
+          this.currentPage = response.number || 0;
+          
           this.tableData = {
             data: this.countries,
-            totalRecords: this.countries.length,
-            isFirst: true
+            totalRecords: this.totalRecords,
+            isFirst: page === 0
           };
           // Ocultar spinner inmediatamente y forzar detección de cambios
           this.loading = false;
@@ -102,6 +110,7 @@ export class CountriesComponent implements OnInit, OnDestroy {
         error: (err) => {
           this.error = err?.error?.message || err?.message || 'Error al cargar los países';
           this.countries = [];
+          this.totalRecords = 0;
           // Ocultar spinner inmediatamente en caso de error y forzar detección de cambios
           this.loading = false;
           this.cdr.detectChanges();
@@ -116,7 +125,9 @@ export class CountriesComponent implements OnInit, OnDestroy {
   }
 
   search(): void {
-    this.loadCountries();
+    // Resetear a la primera página al buscar
+    this.currentPage = 0;
+    this.loadCountries(0, this.pageSize);
   }
 
   openCreateForm(): void {
@@ -193,7 +204,11 @@ export class CountriesComponent implements OnInit, OnDestroy {
   }
 
   onTablePagination(event: any): void {
-    // Para países no hay paginación server-side, pero se puede implementar aquí
+    const page = event.page || 0;
+    const rows = event.rows || this.pageSize;
+    this.currentPage = page;
+    this.pageSize = rows;
+    this.loadCountries(page, rows);
   }
 
   deleteCountry(country: Country): void {

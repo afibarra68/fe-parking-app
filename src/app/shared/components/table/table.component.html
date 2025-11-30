@@ -33,7 +33,7 @@
   <ng-template pTemplate="body" let-rowData let-columns="columns" let-index="rowIndex">
     <tr [pSelectableRow]="rowData" [pSelectableRowIndex]="index">
       <td *ngFor="let col of columns">
-        {{ checkEmpty(rowData[col.field]) }}
+        {{ checkEmpty(getNestedValue(rowData, col.field)) }}
       </td>
     </tr>
   </ng-template>

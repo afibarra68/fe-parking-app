@@ -1,8 +1,8 @@
-<div class="countries-container">
+<div class="companies-container">
   <div class="header">
-    <h1>Países</h1>
+    <h1>Empresas</h1>
     <p-button 
-      label="Nuevo País" 
+      label="Nueva Empresa" 
       icon="pi pi-plus" 
       (onClick)="openCreateForm()" 
       [disabled]="loading">
@@ -15,8 +15,8 @@
       <input 
         type="text" 
         pInputText 
-        [(ngModel)]="searchName"
-        placeholder="Buscar por nombre..."
+        [(ngModel)]="searchCompanyName"
+        placeholder="Buscar por nombre de empresa..."
         (keyup.enter)="search()"
       />
     </span>
@@ -25,8 +25,8 @@
       <input 
         type="text" 
         pInputText 
-        [(ngModel)]="searchDescription"
-        placeholder="Buscar por descripción..."
+        [(ngModel)]="searchNumberIdentity"
+        placeholder="Buscar por número de identidad..."
         (keyup.enter)="search()"
       />
     </span>
@@ -41,7 +41,7 @@
       <p-button 
         label="Limpiar" 
         icon="pi pi-times" 
-        (onClick)="searchName = ''; searchDescription = ''; currentPage = 0; loadCountries(0, pageSize)" 
+        (onClick)="searchCompanyName = ''; searchNumberIdentity = ''; loadCompanies()" 
         [disabled]="loading"
         styleClass="p-button-text">
       </p-button>
@@ -58,87 +58,56 @@
 
   <p-dialog 
     [(visible)]="showForm" 
-    [header]="editingCountry ? 'Editar País' : 'Nuevo País'"
+    [header]="editingCompany ? 'Editar Empresa' : 'Nueva Empresa'"
     [modal]="true"
-    [style]="{width: '600px'}"
+    [style]="{width: '600px', maxHeight: '90vh'}"
     [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [contentStyle]="{overflow: 'auto', maxHeight: 'calc(90vh - 100px)'}"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">
       <div class="form-group">
-        <label for="name">Nombre *</label>
+        <label for="companyName">Nombre de Empresa *</label>
         <input 
-          id="name"
+          id="companyName"
           type="text" 
           pInputText 
-          formControlName="name"
-          [class.ng-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+          formControlName="companyName"
+          [class.ng-invalid]="form.get('companyName')?.invalid && form.get('companyName')?.touched"
         />
         <small 
           class="p-error" 
-          *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-          El nombre es requerido
+          *ngIf="form.get('companyName')?.invalid && form.get('companyName')?.touched">
+          El nombre de empresa es requerido
         </small>
       </div>
 
       <div class="form-group">
-        <label for="description">Descripción</label>
+        <label for="numberIdentity">Número de Identidad</label>
         <input 
-          id="description"
+          id="numberIdentity"
           type="text" 
           pInputText 
-          formControlName="description"
+          formControlName="numberIdentity"
         />
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="isoCode">Código ISO</label>
-          <input 
-            id="isoCode"
-            type="text" 
-            pInputText 
-            formControlName="isoCode"
-            maxlength="3"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="timezone">Zona Horaria</label>
-          <input 
-            id="timezone"
-            type="text" 
-            pInputText 
-            formControlName="timezone"
-          />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="lang">Idioma</label>
-          <input 
-            id="lang"
-            type="text" 
-            pInputText 
-            formControlName="lang"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="currency">Moneda</label>
-          <input 
-            id="currency"
-            type="text" 
-            pInputText 
-            formControlName="currency"
-          />
-        </div>
-      </div>
+      <app-select-lib
+        formControlName="countryId"
+        [options]="countryOptions"
+        label="País"
+        [filter]="true"
+        [virtualScroll]="true"
+        [scrollHeight]="'200px'"
+        [appendTo]="'body'"
+        (onLazyLoad)="onCountryLazyLoad($event)">
+      </app-select-lib>
 
       <div class="form-actions">
         <p-button 
           type="submit"
-          [label]="loading ? 'Guardando...' : (editingCountry ? 'Actualizar' : 'Crear')"
+          [label]="loading ? 'Guardando...' : (editingCompany ? 'Actualizar' : 'Crear')"
           icon="pi pi-check"
           [disabled]="form.invalid || loading"
           [loading]="loading">
@@ -159,7 +128,7 @@
     <app-spinner 
       [loading]="loading"
       size="normal"
-      message="Cargando países..."
+      message="Cargando empresas..."
       [overlay]="true">
     </app-spinner>
     
@@ -177,3 +146,4 @@
     </app-table-lib>
   </div>
 </div>
+
