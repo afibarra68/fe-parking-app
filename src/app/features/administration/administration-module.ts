@@ -5,6 +5,7 @@ import { AdministrationRoutingModule } from './administration-routing-module';
 import { CountriesComponent } from './countries/countries.component';
 import { ClientsComponent } from './clients/clients.component';
 import { CompaniesComponent } from './companies/companies.component';
+import { BusinessServiceComponent } from './business-service/business-service.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -16,6 +17,7 @@ import { SharedModule } from '../../shared/shared-module';
     CountriesComponent,
     CompaniesComponent,
     ClientsComponent,
+    BusinessServiceComponent,
     SharedModule
   ],
   exports: [

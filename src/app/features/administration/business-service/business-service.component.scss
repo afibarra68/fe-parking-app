@@ -1,22 +1,7 @@
-.companies-container {
+.business-service-container {
   padding: 1.5rem;
   max-width: 100%;
   margin: 0;
-
-  ::ng-deep {
-    .custom-spinner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 300px;
-      position: relative;
-      z-index: 1;
-    }
-  }
-}
-
-.table-container {
-  position: relative;
 }
 
 .header {
@@ -68,43 +53,10 @@
     width: 100%;
   }
 
-  ::ng-deep {
-    .p-dropdown,
-    .p-select {
-      width: 100%;
-    }
-    
-    // Estilos para el modal y el select dentro del modal
-    .p-dialog {
-      .p-dialog-content {
-        overflow: visible !important;
-      }
-      
-      .p-select-overlay {
-        z-index: 10000 !important;
-      }
-    }
-    
-    // Ancho del 50% para el campo de país
-    app-select-lib {
-      width: 50%;
-      
-      .p-field {
-        width: 100%;
-      }
-    }
-  }
-
   small {
     display: block;
     margin-top: 0.25rem;
   }
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
 }
 
 .form-actions {
@@ -117,19 +69,6 @@
 .table-container {
   margin-top: 1rem;
   position: relative;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.8);
-  z-index: 1000;
 }
 
 .empty-state {

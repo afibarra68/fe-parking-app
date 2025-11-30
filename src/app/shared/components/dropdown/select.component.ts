@@ -27,7 +27,6 @@ import { ErrorComponent } from '../error/error.component';
           [virtualScroll]="virtualScroll"
           [virtualScrollItemSize]="itemSize"
           [appendTo]="appendTo"
-          [scrollHeight]="scrollHeight"
           (onChange)="onChange.emit($event)"
           (onLazyLoad)="onLazyLoad.emit($event)"
           optionLabel="label"

@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { CompanyService, Company } from '../../../core/services/company.service';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CompanyService, Company, CompanyPageResponse } from '../../../core/services/company.service';
 import { CountryService, Country } from '../../../core/services/country.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -10,7 +10,8 @@ import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { SelectItem } from 'primeng/api';
-import { Subscription, timeout } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-companies',
@@ -18,7 +19,6 @@ import { Subscription, timeout } from 'rxjs';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    FormsModule,
     ButtonModule,
     InputTextModule,
     DialogModule,
@@ -28,20 +28,29 @@ import { Subscription, timeout } from 'rxjs';
   templateUrl: './companies.component.html',
   styleUrls: ['./companies.component.scss']
 })
-export class CompaniesComponent implements OnInit, OnDestroy {
-  companies: Company[] = [];
-  countries: Country[] = [];
-  countryOptions: SelectItem[] = [];
+export class CompaniesComponent implements OnDestroy {
   loading = false;
   showForm = false;
   editingCompany: Company | null = null;
   error: string | null = null;
-  searchCompanyName = '';
-  searchNumberIdentity = '';
+  countryOptions: SelectItem[] = [];
+  
+  // Paginación
+  page: number = 0;
+  size: number = environment.rowsPerPage || 10;
+  first = 0;
+  
   private subscription?: Subscription;
   private countriesSubscription?: Subscription;
   private countryFilterTimeout?: any;
   private lastCountryFilter: string = '';
+  
+  private tableDataSubject = new BehaviorSubject<any>({
+    data: [],
+    totalRecords: 0,
+    isFirst: true
+  });
+  tableData$: Observable<any> = this.tableDataSubject.asObservable();
 
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
@@ -51,31 +60,27 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     { field: 'country.name', header: 'País', width: '200px' }
   ];
 
-  tableData: any = {
-    data: [],
-    totalRecords: 0,
-    isFirst: true
-  };
-
   form: FormGroup;
+  searchForm: FormGroup;
 
   constructor(
     private companyService: CompanyService,
     private countryService: CountryService,
-    private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private fb: FormBuilder
   ) {
     this.form = this.fb.group({
       companyName: ['', [Validators.required]],
       numberIdentity: [''],
       countryId: [null]
     });
-  }
 
-  ngOnInit(): void {
-    // Cargar todos los países inicialmente (sin filtro)
+    this.searchForm = this.fb.group({
+      companyName: [''],
+      numberIdentity: ['']
+    });
+    
+    // Cargar países inicialmente (las empresas se cargarán cuando la tabla dispare onLazyLoad)
     this.loadCountries();
-    this.loadCompanies();
   }
 
   loadCountries(filter?: string): void {
@@ -83,24 +88,17 @@ export class CompaniesComponent implements OnInit, OnDestroy {
       this.countriesSubscription.unsubscribe();
     }
 
-    this.countriesSubscription = this.countryService.getCountriesQueryable(undefined, undefined, filter)
-      .pipe(
-        timeout(30000)
-      )
+    // Si hay filtro, cargar con filtro, sino cargar todos
+    this.countriesSubscription = this.countryService.getQueryable(filter ? { name: filter } : undefined)
       .subscribe({
-        next: (data) => {
-          this.countries = Array.isArray(data) ? data : [];
-          // Convertir países a SelectItem[] para el dropdown
-          this.countryOptions = this.countries.map(country => ({
+        next: (data: Country[]) => {
+          this.countryOptions = (Array.isArray(data) ? data : []).map(country => ({
             label: country.name || '',
             value: country.countryId
           }));
-          // Actualizar el último filtro aplicado
           this.lastCountryFilter = filter || '';
         },
-        error: (err) => {
-          console.error('Error al cargar países:', err);
-          this.countries = [];
+        error: (err: any) => {
           this.countryOptions = [];
           this.lastCountryFilter = '';
         }
@@ -108,59 +106,61 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   }
 
   onCountryLazyLoad(event: any): void {
-    const filter = event.filter || '';
+    // Ignorar eventos de scroll, solo procesar cambios de filtro
+    const filter = event?.filter || '';
     
-    // Solo procesar si el filtro cambió (no es solo scroll)
+    // Si el filtro no cambió, es solo scroll - no hacer nada
+    // Esto evita errores cuando se llega al final del scroll
     if (filter === this.lastCountryFilter) {
-      return; // Es solo scroll, no hacer nada porque ya tenemos todos los datos
+      return;
     }
     
-    this.lastCountryFilter = filter;
+    // Si no hay filtro y ya cargamos la lista completa, no hacer nada
+    if (!filter && this.lastCountryFilter === '' && this.countryOptions.length > 0) {
+      return;
+    }
     
-    // Debounce para evitar demasiadas llamadas mientras el usuario escribe
+    // Si el filtro cambió, actualizar con debounce
     if (this.countryFilterTimeout) {
       clearTimeout(this.countryFilterTimeout);
     }
     
     this.countryFilterTimeout = setTimeout(() => {
-      // Usar el servicio queryable que retorna lista completa filtrada por nombre
       this.loadCountries(filter);
-    }, 300); // Esperar 300ms después de que el usuario deje de escribir
+    }, 300);
   }
 
   loadCompanies(): void {
-    // Cancelar suscripción anterior si existe
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
 
     this.loading = true;
     this.error = null;
-    const companyName = this.searchCompanyName.trim() || undefined;
-    const numberIdentity = this.searchNumberIdentity.trim() || undefined;
     
-    this.subscription = this.companyService.getCompanies(undefined, companyName, numberIdentity)
-      .pipe(
-        timeout(30000) // Timeout de 30 segundos
-      )
+    const filters = {
+      companyName: this.searchForm.value.companyName?.trim() || undefined,
+      numberIdentity: this.searchForm.value.numberIdentity?.trim() || undefined
+    };
+    
+    this.subscription = this.companyService.getPageable(this.page, this.size, filters)
       .subscribe({
-        next: (data) => {
-          this.companies = Array.isArray(data) ? data : [];
-          this.tableData = {
-            data: this.companies,
-            totalRecords: this.companies.length,
-            isFirst: true
-          };
-          // Ocultar spinner inmediatamente y forzar detección de cambios
+        next: (data: CompanyPageResponse) => {
+          this.tableDataSubject.next({
+            data: data.content,
+            totalRecords: data.totalElements,
+            isFirst: this.page === 0
+          });
           this.loading = false;
-          this.cdr.detectChanges();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.error = err?.error?.message || err?.message || 'Error al cargar las empresas';
-          this.companies = [];
-          // Ocultar spinner inmediatamente en caso de error y forzar detección de cambios
+          this.tableDataSubject.next({
+            data: [],
+            totalRecords: 0,
+            isFirst: true
+          });
           this.loading = false;
-          this.cdr.detectChanges();
         }
       });
   }
@@ -175,16 +175,26 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     if (this.countryFilterTimeout) {
       clearTimeout(this.countryFilterTimeout);
     }
+    this.tableDataSubject.complete();
   }
 
   search(): void {
-    this.loadCompanies();
+    this.page = 0;
+    this.first = 0;
+    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
+  }
+
+  clearSearch(): void {
+    this.searchForm.reset();
+    this.loadCountries();
+    this.search();
   }
 
   openCreateForm(): void {
     this.editingCompany = null;
     this.form.reset();
     this.showForm = true;
+    this.loadCountries();
   }
 
   openEditForm(company: Company): void {
@@ -195,6 +205,7 @@ export class CompaniesComponent implements OnInit, OnDestroy {
       countryId: company.country?.countryId || company.countryId || null
     });
     this.showForm = true;
+    this.loadCountries();
   }
 
   cancelForm(): void {
@@ -220,13 +231,12 @@ export class CompaniesComponent implements OnInit, OnDestroy {
       companyData.companyId = this.editingCompany.companyId;
     }
 
-    // Buscar el nombre del país seleccionado
-    const selectedCountry = this.countries.find(c => c.countryId === this.form.value.countryId);
-    const countryName = selectedCountry?.name;
+    const selectedCountry = this.countryOptions.find(c => c.value === this.form.value.countryId);
+    const countryName = selectedCountry?.label;
 
     const operation = this.editingCompany
-      ? this.companyService.updateCompany(companyData, countryName)
-      : this.companyService.createCompany(companyData, countryName);
+      ? this.companyService.update(companyData, countryName)
+      : this.companyService.create(companyData, countryName);
 
     operation.subscribe({
       next: () => {
@@ -236,7 +246,7 @@ export class CompaniesComponent implements OnInit, OnDestroy {
         this.form.reset();
         this.loadCompanies();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = err?.error?.message || 'Error al guardar la empresa';
         this.loading = false;
       }
@@ -250,22 +260,16 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   }
 
   onTableDelete(selected: any): void {
-    if (selected && confirm(`¿Está seguro de eliminar la empresa "${selected.companyName}"?`)) {
-      // Nota: El backend no tiene endpoint DELETE, pero se puede implementar aquí si se agrega
-      this.error = 'La funcionalidad de eliminar no está disponible en el backend';
+    if (selected) {
+      this.error = 'La funcionalidad de eliminar no está disponible';
     }
   }
 
   onTablePagination(event: any): void {
-    // Para empresas no hay paginación server-side, pero se puede implementar aquí
-  }
-
-  deleteCompany(company: Company): void {
-    if (!confirm(`¿Está seguro de eliminar la empresa "${company.companyName}"?`)) {
-      return;
-    }
-    // Nota: El backend no tiene endpoint DELETE, pero se puede implementar aquí si se agrega
-    this.error = 'La funcionalidad de eliminar no está disponible en el backend';
+    this.page = event.page || 0;
+    this.size = event.rows || environment.rowsPerPage || 10;
+    this.first = event.first || 0;
+    this.loadCompanies();
   }
 }
 

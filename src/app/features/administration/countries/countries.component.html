@@ -9,13 +9,13 @@
     </p-button>
   </div>
 
-  <div class="search-bar" *ngIf="!showForm">
+  <div class="search-bar" *ngIf="!showForm" [formGroup]="searchForm">
     <span class="p-input-icon-left">
       <i class="pi pi-search"></i>
       <input 
         type="text" 
         pInputText 
-        [(ngModel)]="searchName"
+        formControlName="name"
         placeholder="Buscar por nombre..."
         (keyup.enter)="search()"
       />
@@ -25,7 +25,7 @@
       <input 
         type="text" 
         pInputText 
-        [(ngModel)]="searchDescription"
+        formControlName="description"
         placeholder="Buscar por descripción..."
         (keyup.enter)="search()"
       />
@@ -41,7 +41,7 @@
       <p-button 
         label="Limpiar" 
         icon="pi pi-times" 
-        (onClick)="searchName = ''; searchDescription = ''; currentPage = 0; loadCountries(0, pageSize)" 
+        (onClick)="clearSearch()" 
         [disabled]="loading"
         styleClass="p-button-text">
       </p-button>
@@ -156,15 +156,8 @@
   </p-dialog>
 
   <div *ngIf="!showForm" class="table-container">
-    <app-spinner 
-      [loading]="loading"
-      size="normal"
-      message="Cargando países..."
-      [overlay]="true">
-    </app-spinner>
-    
     <app-table-lib
-      *ngIf="!loading"
+      *ngIf="(tableData$ | async) as tableData"
       [cols]="cols"
       [dataTable]="tableData"
       [hasEdit]="true"

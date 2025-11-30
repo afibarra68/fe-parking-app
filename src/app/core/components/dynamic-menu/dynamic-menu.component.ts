@@ -1,6 +1,7 @@
 import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MenuService } from '../../services/menu.service';
+import { SidebarService } from '../../services/sidebar.service';
 import { MenuItem } from '../../models/menu-item.model';
 
 @Component({
@@ -13,6 +14,7 @@ import { MenuItem } from '../../models/menu-item.model';
 })
 export class DynamicMenuComponent {
   private readonly menuService = inject(MenuService);
+  private readonly sidebarService = inject(SidebarService);
   
   // Usar computed signal para derivar los items visibles del menú
   // Esto evita re-renderizados innecesarios y mantiene el componente estático
@@ -20,5 +22,8 @@ export class DynamicMenuComponent {
     const items = this.menuService.getMenuItems()();
     return items.filter(item => item.visible !== false);
   });
+  
+  // Exponer el estado colapsado del sidebar
+  readonly collapsed = this.sidebarService.collapsed;
 }
 

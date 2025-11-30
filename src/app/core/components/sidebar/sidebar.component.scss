@@ -42,6 +42,38 @@
 
   .toggle-btn {
     margin-left: auto;
+    min-width: 40px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+    
+    i {
+      font-size: 1.25rem;
+      color: #495057;
+    }
+    
+    &:hover {
+      background-color: #e9ecef;
+      border-color: #adb5bd;
+      
+      i {
+        color: #212529;
+      }
+    }
+    
+    &:active {
+      background-color: #dee2e6;
+      transform: scale(0.95);
+    }
   }
 }
 

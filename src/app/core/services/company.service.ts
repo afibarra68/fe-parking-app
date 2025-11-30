@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Country } from './country.service';
 
@@ -12,6 +12,14 @@ export interface Company {
   countryId?: number;
 }
 
+export interface CompanyPageResponse {
+  content: Company[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -19,27 +27,24 @@ export class CompanyService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiAuthJwt;
 
-  getCompanies(companyId?: number, companyName?: string, numberIdentity?: string): Observable<Company[]> {
-    let params = new HttpParams();
-    if (companyId) {
-      params = params.set('companyId', companyId.toString());
+  // Listar con paginación
+  getPageable(page: number, size: number, filters?: { companyName?: string; numberIdentity?: string }): Observable<CompanyPageResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    
+    if (filters?.companyName) {
+      params = params.set('companyName', filters.companyName);
     }
-    if (companyName) {
-      params = params.set('companyName', companyName);
+    if (filters?.numberIdentity) {
+      params = params.set('numberIdentity', filters.numberIdentity);
     }
-    if (numberIdentity) {
-      params = params.set('numberIdentity', numberIdentity);
-    }
-    return this.http.get<Company[]>(`${this.apiUrl}/companies`, { params })
-      .pipe(
-        catchError(error => {
-          return throwError(() => error);
-        })
-      );
+    
+    return this.http.get<CompanyPageResponse>(`${this.apiUrl}/companies/pageable`, { params });
   }
 
-  createCompany(company: Company, countryName?: string): Observable<Company> {
-    // Transformar countryId a country: {countryId: ..., name: ...}
+  // Crear
+  create(company: Company, countryName?: string): Observable<Company> {
     const payload: any = {
       companyName: company.companyName,
       numberIdentity: company.numberIdentity,
@@ -48,17 +53,11 @@ export class CompanyService {
         name: countryName || null
       } : null
     };
-    
-    return this.http.post<Company>(`${this.apiUrl}/companies`, payload)
-      .pipe(
-        catchError(error => {
-          return throwError(() => error);
-        })
-      );
+    return this.http.post<Company>(`${this.apiUrl}/companies`, payload);
   }
 
-  updateCompany(company: Company, countryName?: string): Observable<Company> {
-    // Transformar countryId a country: {countryId: ..., name: ...}
+  // Actualizar
+  update(company: Company, countryName?: string): Observable<Company> {
     const payload: any = {
       companyId: company.companyId,
       companyName: company.companyName,
@@ -68,13 +67,7 @@ export class CompanyService {
         name: countryName || null
       } : null
     };
-    
-    return this.http.put<Company>(`${this.apiUrl}/companies`, payload)
-      .pipe(
-        catchError(error => {
-          return throwError(() => error);
-        })
-      );
+    return this.http.put<Company>(`${this.apiUrl}/companies`, payload);
   }
 }
 

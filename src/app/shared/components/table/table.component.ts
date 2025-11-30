@@ -45,25 +45,35 @@ export class TableComponent {
   selected: any;
   rows: number = environment.rowsPerPage || 10;
   isNotRowSelected = true;
-  first = 0;
+  _first = 0;
+  
+  @Input() set first(value: number) {
+    this._first = value;
+  }
+  
+  get first(): number {
+    return this._first;
+  }
 
-  @Input() set dataTable(data: TableData | any[]) {
-    if (data) {
-      // Si es un array directo, convertir a formato TableData
-      if (Array.isArray(data)) {
-        this._dataTable = data;
-        this._totalRecords = data.length;
-      } else {
-        // Si es un objeto TableData
-        this._dataTable = data.data || [];
-        this._totalRecords = data.totalRecords || 0;
-        if (data.isFirst) {
-          this.first = 0;
-        }
-      }
-      this.isNotRowSelected = true;
-      this.selected = null;
+  @Input() set dataTable(data: TableData | any[] | null | undefined) {
+    if (!data) {
+      this._dataTable = [];
+      this._totalRecords = 0;
+      return;
     }
+    
+    if (Array.isArray(data)) {
+      this._dataTable = data;
+      this._totalRecords = data.length;
+    } else {
+      this._dataTable = data.data || [];
+      this._totalRecords = data.totalRecords || 0;
+      if (data.isFirst && this._first !== 0) {
+        this._first = 0;
+      }
+    }
+    this.isNotRowSelected = true;
+    this.selected = null;
   }
 
   get dataTable(): any[] {
@@ -75,16 +85,15 @@ export class TableComponent {
   }
 
   paginationEmitter(event: any): void {
-    if (this.totalRecords > 0) {
-      const page = event.first / event.rows;
-      this.first = event.first;
-      this.pagination.emit({
-        page: page,
-        first: event.first,
-        rows: event.rows,
-        pageCount: event.pageCount
-      });
-    }
+    // Emitir siempre para permitir carga inicial cuando totalRecords es 0
+    const page = event.first / event.rows;
+    this.first = event.first;
+    this.pagination.emit({
+      page: page,
+      first: event.first,
+      rows: event.rows,
+      pageCount: event.pageCount
+    });
   }
 
   editEmitter(): void {

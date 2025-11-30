@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface Page<T> {
@@ -30,42 +30,27 @@ export class ClientService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiAuthJwt;
 
-  getClients(document?: string, page: number = 0, size: number = 10): Observable<Page<Client>> {
+  // Listar con paginación
+  getPageable(page: number, size: number, filters?: { document?: string }): Observable<Page<Client>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
     
-    if (document) {
-      params = params.set('document', document);
+    if (filters?.document) {
+      params = params.set('document', filters.document);
     }
     
-    return this.http.get<Page<Client>>(`${this.apiUrl}/client`, { params })
-      .pipe(
-        catchError(error => {
-          console.error('Error al obtener clientes:', error);
-          return throwError(() => error);
-        })
-      );
+    return this.http.get<Page<Client>>(`${this.apiUrl}/client`, { params });
   }
 
-  createClient(client: Client): Observable<Client> {
-    return this.http.post<Client>(`${this.apiUrl}/client`, client)
-      .pipe(
-        catchError(error => {
-          console.error('Error al crear cliente:', error);
-          return throwError(() => error);
-        })
-      );
+  // Crear
+  create(client: Client): Observable<Client> {
+    return this.http.post<Client>(`${this.apiUrl}/client`, client);
   }
 
-  updateClient(client: Client): Observable<Client> {
-    return this.http.put<Client>(`${this.apiUrl}/client`, client)
-      .pipe(
-        catchError(error => {
-          console.error('Error al actualizar cliente:', error);
-          return throwError(() => error);
-        })
-      );
+  // Actualizar
+  update(client: Client): Observable<Client> {
+    return this.http.put<Client>(`${this.apiUrl}/client`, client);
   }
 }
 

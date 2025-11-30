@@ -1,22 +1,32 @@
-<div class="clients-container">
+<div class="business-service-container">
   <div class="header">
-    <h1>Clientes</h1>
+    <h1>Servicios de Negocio</h1>
     <p-button 
-      label="Nuevo Cliente" 
+      label="Nuevo Servicio" 
       icon="pi pi-plus" 
       (onClick)="openCreateForm()" 
       [disabled]="loading">
     </p-button>
   </div>
 
-  <div class="search-bar" *ngIf="!showForm" [formGroup]="searchForm">
+  <form [formGroup]="searchForm" class="search-bar" *ngIf="!showForm">
     <span class="p-input-icon-left">
       <i class="pi pi-search"></i>
       <input 
         type="text" 
         pInputText 
-        formControlName="document"
-        placeholder="Buscar por número de identidad..."
+        formControlName="principalName"
+        placeholder="Buscar por nombre principal..."
+        (keyup.enter)="search()"
+      />
+    </span>
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input 
+        type="text" 
+        pInputText 
+        formControlName="code"
+        placeholder="Buscar por código..."
         (keyup.enter)="search()"
       />
     </span>
@@ -36,7 +46,7 @@
         styleClass="p-button-text">
       </p-button>
     </div>
-  </div>
+  </form>
 
   <p-message 
     *ngIf="error" 
@@ -48,76 +58,58 @@
 
   <p-dialog 
     [(visible)]="showForm" 
-    [header]="editingClient ? 'Editar Cliente' : 'Nuevo Cliente'"
+    [header]="editingBusinessService ? 'Editar Servicio de Negocio' : 'Nuevo Servicio de Negocio'"
     [modal]="true"
     [style]="{width: '600px'}"
     [closable]="true"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">
       <div class="form-group">
-        <label for="fullName">Nombre Completo *</label>
+        <label for="principalName">Nombre Principal *</label>
         <input 
-          id="fullName"
+          id="principalName"
           type="text" 
           pInputText 
-          formControlName="fullName"
-          [class.ng-invalid]="form.get('fullName')?.invalid && form.get('fullName')?.touched"
+          formControlName="principalName"
+          [class.ng-invalid]="form.get('principalName')?.invalid && form.get('principalName')?.touched"
         />
         <small 
           class="p-error" 
-          *ngIf="form.get('fullName')?.invalid && form.get('fullName')?.touched">
-          El nombre completo es requerido
+          *ngIf="form.get('principalName')?.invalid && form.get('principalName')?.touched">
+          El nombre principal es requerido
         </small>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="typeIdentity">Tipo de Identidad</label>
-          <input 
-            id="typeIdentity"
-            type="text" 
-            pInputText 
-            formControlName="typeIdentity"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="numberIdentity">Número de Identidad</label>
-          <input 
-            id="numberIdentity"
-            type="text" 
-            pInputText 
-            formControlName="numberIdentity"
-          />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="people">Personas</label>
-          <input 
-            id="people"
-            type="text" 
-            pInputText 
-            formControlName="people"
-          />
-        </div>
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <input 
+          id="description"
+          type="text" 
+          pInputText 
+          formControlName="description"
+        />
       </div>
 
       <div class="form-group">
-        <label for="clientCompanyId">ID de Compañía</label>
+        <label for="code">Código *</label>
         <input 
-          id="clientCompanyId"
-          type="number" 
+          id="code"
+          type="text" 
           pInputText 
-          formControlName="clientCompanyId"
+          formControlName="code"
+          [class.ng-invalid]="form.get('code')?.invalid && form.get('code')?.touched"
         />
+        <small 
+          class="p-error" 
+          *ngIf="form.get('code')?.invalid && form.get('code')?.touched">
+          El código es requerido
+        </small>
       </div>
 
       <div class="form-actions">
         <p-button 
           type="submit"
-          [label]="loading ? 'Guardando...' : (editingClient ? 'Actualizar' : 'Crear')"
+          [label]="loading ? 'Guardando...' : (editingBusinessService ? 'Actualizar' : 'Crear')"
           icon="pi pi-check"
           [disabled]="form.invalid || loading"
           [loading]="loading">
@@ -135,13 +127,6 @@
   </p-dialog>
 
   <div *ngIf="!showForm" class="table-container">
-    <app-spinner 
-      [loading]="loading"
-      size="normal"
-      message="Cargando clientes..."
-      [overlay]="true">
-    </app-spinner>
-    
     <app-table-lib
       *ngIf="(tableData$ | async) as tableData"
       [cols]="cols"

@@ -7,16 +7,14 @@
     @if (!collapsed()) {
       <h2 class="sidebar-title">Parking System</h2>
     }
-    <p-button 
-      icon="pi pi-bars" 
-      [text]="true" 
-      [rounded]="true" 
-      (onClick)="toggleSidebar()" 
+    <button 
+      type="button"
+      (click)="toggleSidebar()" 
       class="toggle-btn"
       [attr.aria-label]="ariaLabel()"
-      [attr.aria-expanded]="ariaExpanded()"
-      type="button">
-    </p-button>
+      [attr.aria-expanded]="ariaExpanded()">
+      <i class="pi pi-bars"></i>
+    </button>
   </div>
   <nav class="sidebar-nav" role="navigation" [attr.aria-label]="'Navegación principal'">
     <app-dynamic-menu></app-dynamic-menu>
