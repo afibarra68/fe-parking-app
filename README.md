@@ -1,110 +1,59 @@
-# T-Parking - Frontend
+# TParking
 
-Frontend Angular para el sistema de gestión de parking.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.7.
 
-## 🚀 Tecnologías
+## Development server
 
-- **Angular** 20.3.0
-- **TypeScript** 5.9.2
-- **RxJS** 7.8.0
-- **Angular SSR** (Server-Side Rendering)
-
-## 📋 Requisitos Previos
-
-- Node.js (versión 18 o superior)
-- npm o yarn
-- Backend Spring Boot corriendo en `http://localhost:9000`
-
-## 🛠️ Instalación
+To start a local development server, run:
 
 ```bash
-# Instalar dependencias
-npm install
+ng serve
 ```
 
-## ▶️ Ejecutar en Desarrollo
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+
+## Code scaffolding
+
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
 ```bash
-# Iniciar servidor de desarrollo con proxy
-npm start
+ng generate component component-name
 ```
 
-La aplicación estará disponible en `http://localhost:4200`
-
-## 📁 Estructura del Proyecto
-
-```
-src/app/
-├── components/
-│   ├── login/          # Componente de autenticación
-│   └── dashboard/      # Panel principal después del login
-├── services/
-│   └── auth.service.ts # Servicio de autenticación
-├── interceptors/
-│   └── auth.interceptor.ts # Interceptor para agregar JWT token
-├── app.routes.ts       # Configuración de rutas
-└── app.config.ts       # Configuración de la aplicación
-```
-
-## 🔐 Autenticación
-
-El sistema utiliza JWT (JSON Web Tokens) para la autenticación:
-
-- **Login**: `/api/auth/login`
-- El token se guarda automáticamente en `localStorage`
-- El interceptor HTTP agrega el token a todas las peticiones protegidas
-
-### Endpoints Públicos (sin token)
-- `/api/auth/login`
-- `/api/users/create_public_user`
-
-## 🔄 Proxy Configuration
-
-El proyecto utiliza un proxy para evitar problemas de CORS:
-
-- **Archivo**: `proxy.conf.json`
-- **Configuración**: Redirige `/api` → `http://localhost:9000`
-- **Secure**: `false` (permite HTTP)
-
-## 🎨 Características
-
-- ✅ Login con validación de formularios
-- ✅ Dashboard con información del usuario
-- ✅ Manejo de tokens JWT automático
-- ✅ Interceptor HTTP para autenticación
-- ✅ Gestión de roles de usuario
-- ✅ Manejo de errores
-
-## 📝 Scripts Disponibles
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
 
 ```bash
-npm start              # Servidor de desarrollo con proxy
-npm run build          # Compilar para producción
-npm test              # Ejecutar tests
-npm run watch         # Build en modo watch
+ng generate --help
 ```
 
-## 🔗 Integración con Backend
+## Building
 
-- **URL Base**: `http://localhost:9000`
-- **Proxy**: `/api` → `http://localhost:9000`
-- **Puerto Frontend**: `4200`
-- **Puerto Backend**: `9000`
-
-## 📦 Build para Producción
+To build the project run:
 
 ```bash
-npm run build
+ng build
 ```
 
-Los archivos compilados se generan en `dist/t-parking/`
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-## 🧪 Testing
+## Running unit tests
+
+To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
 
 ```bash
-npm test
+ng test
 ```
 
-## 📄 Licencia
+## Running end-to-end tests
 
-Proyecto privado - Sistema de Gestión de Parking
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

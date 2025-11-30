@@ -1,5 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
@@ -48,15 +49,21 @@ export interface CreateUserResponse {
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
   private apiUrl = environment.apiAuthJwt; // Usar proxy - redirige a http://localhost:9000
   private tokenKey = 'auth_token';
   private userKey = 'user_data';
 
+  private get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials)
+    const baseUrl = this.apiUrl;
+    return this.http.post<LoginResponse>(`${baseUrl}/auth/login`, credentials)
       .pipe(
         tap(response => {
-          if (response.jwt) {
+          if (response.jwt && this.isBrowser) {
             // Guardar el token JWT
             localStorage.setItem(this.tokenKey, response.jwt);
             // Guardar los datos del usuario
@@ -80,21 +87,32 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.userKey);
-    this.router.navigate(['/login']);
+    if (this.isBrowser) {
+      localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.userKey);
+    }
+    this.router.navigate(['/auth/login']);
   }
 
   getToken(): string | null {
+    if (!this.isBrowser) {
+      return null;
+    }
     return localStorage.getItem(this.tokenKey);
   }
 
   getUserData(): any {
+    if (!this.isBrowser) {
+      return null;
+    }
     const userData = localStorage.getItem(this.userKey);
     return userData ? JSON.parse(userData) : null;
   }
 
   isAuthenticated(): boolean {
+    if (!this.isBrowser) {
+      return false;
+    }
     return !!this.getToken();
   }
 
