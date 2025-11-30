@@ -1,7 +1,11 @@
-<app-sidebar 
-  [useMenuService]="true"
-  (sidebarStateChange)="onSidebarStateChange($event)">
-</app-sidebar>
-<div class="main-content" [class.sidebar-open]="sidebarOpen" [class.sidebar-collapsed]="sidebarCollapsed" [class.sidebar-closed]="sidebarClosed">
-  <router-outlet />
+<div class="app-container">
+  <app-sidebar *ngIf="showSidebar()"></app-sidebar>
+  <div class="content-wrapper" [class.with-sidebar]="showSidebar()" [class.sidebar-collapsed]="sidebarCollapsed()">
+    <header class="app-header" *ngIf="showSidebar()">
+      <app-user-control></app-user-control>
+    </header>
+    <main class="main-content">
+      <router-outlet />
+    </main>
+  </div>
 </div>

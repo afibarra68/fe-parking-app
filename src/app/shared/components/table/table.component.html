@@ -1,0 +1,87 @@
+<p-table
+  [columns]="cols"
+  [value]="dataTable"
+  [rows]="rows"
+  [totalRecords]="totalRecords"
+  [scrollable]="true"
+  [resizableColumns]="true"
+  [(selection)]="selected"
+  selectionMode="single"
+  (onRowSelect)="isNotRowSelected = false"
+  (onRowUnselect)="isNotRowSelected = true"
+  styleClass="p-datatable-gridlines p-datatable-sm"
+  [paginator]="true"
+  [lazy]="true"
+  [(first)]="first"
+  (onLazyLoad)="paginationEmitter($event)"
+  [tableStyle]="{'min-width': '50rem'}">
+  
+  <ng-template pTemplate="colgroup" let-columns>
+    <colgroup>
+      <col *ngFor="let col of columns" [style]="colWidth(col)" />
+    </colgroup>
+  </ng-template>
+
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns" pResizableColumn>
+        {{ col.header }}
+      </th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-rowData let-columns="columns" let-index="rowIndex">
+    <tr [pSelectableRow]="rowData" [pSelectableRowIndex]="index">
+      <td *ngFor="let col of columns">
+        {{ checkEmpty(rowData[col.field]) }}
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage" let-columns>
+    <tr>
+      <td [attr.colspan]="columns.length">
+        No se encontraron registros
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="summary">
+    <div class="table-actions">
+      <ng-content></ng-content>
+      <p-button
+        *ngIf="hasReport"
+        icon="pi pi-file-excel"
+        label="Exportar"
+        [disabled]="!totalRecords"
+        (onClick)="reportEmitter()"
+        styleClass="p-button-secondary p-mr-2">
+      </p-button>
+      <p-button
+        *ngIf="hasDetail"
+        icon="pi pi-info-circle"
+        [disabled]="isNotRowSelected"
+        label="Detalle"
+        (onClick)="detailEmitter()"
+        styleClass="p-button-info p-mr-2">
+      </p-button>
+      <p-button
+        *ngIf="hasDelete"
+        icon="pi pi-trash"
+        [disabled]="isNotRowSelected"
+        label="Eliminar"
+        (onClick)="deleteEmitter()"
+        styleClass="p-button-danger p-mr-2">
+      </p-button>
+      <p-button
+        *ngIf="hasEdit"
+        icon="pi pi-pencil"
+        [disabled]="isNotRowSelected"
+        label="Editar"
+        (onClick)="editEmitter()"
+        styleClass="p-button-success">
+      </p-button>
+    </div>
+  </ng-template>
+</p-table>
+

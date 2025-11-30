@@ -1,9 +1,9 @@
 export interface MenuItem {
-  id: string;
   label: string;
   icon?: string;
   routerLink?: string;
-  children?: MenuItem[];
+  items?: MenuItem[];
+  command?: () => void;
   visible?: boolean;
   badge?: string;
   badgeClass?: string;

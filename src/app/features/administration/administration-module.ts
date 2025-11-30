@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 
 import { AdministrationRoutingModule } from './administration-routing-module';
 import { CountriesComponent } from './countries/countries.component';
+import { ClientsComponent } from './clients/clients.component';
+import { SharedModule } from '../../shared/shared-module';
 
 
 @NgModule({
@@ -10,7 +12,12 @@ import { CountriesComponent } from './countries/countries.component';
   imports: [
     CommonModule,
     AdministrationRoutingModule,
-    CountriesComponent
+    CountriesComponent,
+    ClientsComponent,
+    SharedModule
+  ],
+  exports: [
+    SharedModule
   ]
 })
 export class AdministrationModule { }

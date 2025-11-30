@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { MenuService } from '../../services/menu.service';
 import { MenuItem } from '../../models/menu-item.model';
 
 @Component({
@@ -10,31 +11,21 @@ import { MenuItem } from '../../models/menu-item.model';
   templateUrl: './dynamic-menu.component.html',
   styleUrls: ['./dynamic-menu.component.scss']
 })
-export class DynamicMenuComponent {
-  @Input() items: MenuItem[] = [];
-  @Input() collapsed: boolean = false;
-  @Input() level: number = 0;
+export class DynamicMenuComponent implements OnInit {
+  private menuService = inject(MenuService);
+  menuItems: MenuItem[] = [];
 
-  expandedItems: Set<string> = new Set();
-
-  toggleItem(itemId: string): void {
-    if (this.expandedItems.has(itemId)) {
-      this.expandedItems.delete(itemId);
-    } else {
-      this.expandedItems.add(itemId);
-    }
+  constructor() {
+    // Reaccionar a cambios en el menú
+    effect(() => {
+      const items = this.menuService.getMenuItems()();
+      this.menuItems = items.filter(item => item.visible !== false);
+    });
   }
 
-  isExpanded(itemId: string): boolean {
-    return this.expandedItems.has(itemId);
-  }
-
-  hasChildren(item: MenuItem): boolean {
-    return !!(item.children && item.children.length > 0);
-  }
-
-  isVisible(item: MenuItem): boolean {
-    return item.visible !== false;
+  ngOnInit(): void {
+    const items = this.menuService.getMenuItems()();
+    this.menuItems = items.filter(item => item.visible !== false);
   }
 }
 

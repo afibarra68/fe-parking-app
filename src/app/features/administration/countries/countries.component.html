@@ -1,184 +1,167 @@
 <div class="countries-container">
-  <div class="countries-header">
-    <h2>Gestión de Países</h2>
-    <button class="btn btn-primary" (click)="openCreateForm()">
-      <i class="pi pi-plus"></i> Nuevo País
-    </button>
+  <div class="header">
+    <h1>Países</h1>
+    <p-button 
+      label="Nuevo País" 
+      icon="pi pi-plus" 
+      (onClick)="openCreateForm()" 
+      [disabled]="loading">
+    </p-button>
   </div>
 
-  @if (currentError) {
-    <div class="alert alert-error">
-      <i class="pi pi-exclamation-triangle"></i>
-      {{ currentError }}
-    </div>
-  }
-
-  <!-- Búsqueda -->
-  <div class="search-section">
-    <div class="search-input-group">
+  <div class="search-bar" *ngIf="!showForm">
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
       <input 
         type="text" 
-        [value]="searchTerm()"
-        (input)="onSearchTermChange($any($event.target).value)"
+        pInputText 
+        [(ngModel)]="searchDescription"
         placeholder="Buscar por descripción..."
         (keyup.enter)="search()"
-        class="search-input">
-      <button class="btn btn-secondary" (click)="search()">
-        <i class="pi pi-search"></i> Buscar
-      </button>
-      @if (searchTerm()) {
-        <button class="btn btn-link" (click)="clearSearch()">
-          <i class="pi pi-times"></i> Limpiar
-        </button>
-      }
-    </div>
+      />
+    </span>
+    <p-button 
+      label="Buscar" 
+      icon="pi pi-search" 
+      (onClick)="search()" 
+      [disabled]="loading"
+      styleClass="p-button-secondary">
+    </p-button>
+    <p-button 
+      label="Limpiar" 
+      icon="pi pi-times" 
+      (onClick)="searchDescription = ''; loadCountries()" 
+      [disabled]="loading"
+      styleClass="p-button-text">
+    </p-button>
   </div>
 
-  <!-- Tabla de países -->
-  <div class="table-container">
-    @if (countriesState$ | async; as state) {
-      @if (state.error && state.countries.length === 0) {
-        <div class="empty-state error-state">
-          <i class="pi pi-exclamation-triangle"></i>
-          <p>{{ state.error }}</p>
-          <button class="btn btn-primary" (click)="loadCountries()">
-            <i class="pi pi-refresh"></i> Reintentar
-          </button>
-        </div>
-      } @else if (state.countries.length === 0) {
-        <div class="empty-state">
-          <i class="pi pi-inbox"></i>
-          <p>No se encontraron países</p>
-        </div>
-      } @else {
-        <table class="countries-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Código ISO</th>
-              <th>Zona Horaria</th>
-              <th>Idioma</th>
-              <th>Moneda</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (country of state.countries; track country.countryId) {
-              <tr>
-                <td>{{ country.countryId }}</td>
-                <td>{{ country.name || '-' }}</td>
-                <td>{{ country.description || '-' }}</td>
-                <td>{{ country.isoCode || '-' }}</td>
-                <td>{{ country.timezone || '-' }}</td>
-                <td>{{ country.lang || '-' }}</td>
-                <td>{{ country.currency || '-' }}</td>
-                <td class="actions">
-                  <button 
-                    class="btn btn-icon btn-edit" 
-                    (click)="openEditForm(country)"
-                    title="Editar">
-                    <i class="pi pi-pencil"></i>
-                  </button>
-                  <button 
-                    class="btn btn-icon btn-delete" 
-                    (click)="deleteCountry(country)"
-                    title="Eliminar">
-                    <i class="pi pi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    }
-  </div>
+  <p-message 
+    *ngIf="error" 
+    severity="error" 
+    [text]="error"
+    [closable]="true"
+    (onClose)="error = null">
+  </p-message>
 
-  <!-- Modal de formulario -->
-  @if (showForm()) {
-    <div class="modal-overlay" (click)="closeForm()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>{{ isEditing ? 'Editar País' : 'Nuevo País' }}</h3>
-          <button class="btn btn-icon" (click)="closeForm()">
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
-        <form [formGroup]="countryForm" (ngSubmit)="saveCountry()" class="modal-body">
-          <div class="form-group">
-            <label for="name">Nombre *</label>
-            <input 
-              id="name" 
-              type="text" 
-              formControlName="name" 
-              class="form-control"
-              required>
-          </div>
-
-          <div class="form-group">
-            <label for="description">Descripción</label>
-            <input 
-              id="description" 
-              type="text" 
-              formControlName="description" 
-              class="form-control">
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="isoCode">Código ISO</label>
-              <input 
-                id="isoCode" 
-                type="text" 
-                formControlName="isoCode" 
-                class="form-control"
-                maxlength="5">
-            </div>
-
-            <div class="form-group">
-              <label for="timezone">Zona Horaria</label>
-              <input 
-                id="timezone" 
-                type="text" 
-                formControlName="timezone" 
-                class="form-control">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="lang">Idioma</label>
-              <input 
-                id="lang" 
-                type="text" 
-                formControlName="lang" 
-                class="form-control">
-            </div>
-
-            <div class="form-group">
-              <label for="currency">Moneda</label>
-              <input 
-                id="currency" 
-                type="text" 
-                formControlName="currency" 
-                class="form-control"
-                maxlength="10">
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="closeForm()">
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary" [disabled]="countryForm.invalid">
-              {{ isEditing ? 'Actualizar' : 'Crear' }}
-            </button>
-          </div>
-        </form>
+  <p-dialog 
+    [(visible)]="showForm" 
+    [header]="editingCountry ? 'Editar País' : 'Nuevo País'"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [closable]="true"
+    (onHide)="cancelForm()">
+    <form [formGroup]="form" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <label for="name">Nombre *</label>
+        <input 
+          id="name"
+          type="text" 
+          pInputText 
+          formControlName="name"
+          [class.ng-invalid]="form.get('name')?.invalid && form.get('name')?.touched"
+        />
+        <small 
+          class="p-error" 
+          *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+          El nombre es requerido
+        </small>
       </div>
-    </div>
-  }
-</div>
 
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <input 
+          id="description"
+          type="text" 
+          pInputText 
+          formControlName="description"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="isoCode">Código ISO</label>
+          <input 
+            id="isoCode"
+            type="text" 
+            pInputText 
+            formControlName="isoCode"
+            maxlength="3"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="timezone">Zona Horaria</label>
+          <input 
+            id="timezone"
+            type="text" 
+            pInputText 
+            formControlName="timezone"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lang">Idioma</label>
+          <input 
+            id="lang"
+            type="text" 
+            pInputText 
+            formControlName="lang"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="currency">Moneda</label>
+          <input 
+            id="currency"
+            type="text" 
+            pInputText 
+            formControlName="currency"
+          />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <p-button 
+          type="submit"
+          [label]="loading ? 'Guardando...' : (editingCountry ? 'Actualizar' : 'Crear')"
+          icon="pi pi-check"
+          [disabled]="form.invalid || loading"
+          [loading]="loading">
+        </p-button>
+        <p-button 
+          type="button"
+          label="Cancelar" 
+          icon="pi pi-times"
+          (onClick)="cancelForm()" 
+          [disabled]="loading"
+          styleClass="p-button-secondary">
+        </p-button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <div *ngIf="!showForm" class="table-container">
+    <app-spinner 
+      [loading]="loading"
+      size="normal"
+      message="Cargando países..."
+      [overlay]="true">
+    </app-spinner>
+    
+    <app-table-lib
+      *ngIf="!loading"
+      [cols]="cols"
+      [dataTable]="tableData"
+      [hasEdit]="true"
+      [hasDelete]="false"
+      [hasDetail]="false"
+      [hasReport]="false"
+      (onEdit)="onTableEdit($event)"
+      (onDelete)="onTableDelete($event)"
+      (pagination)="onTablePagination($event)">
+    </app-table-lib>
+  </div>
+</div>

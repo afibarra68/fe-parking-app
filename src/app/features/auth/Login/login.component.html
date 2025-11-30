@@ -1,20 +1,80 @@
 <div class="login-wrapper">
-  <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
-    <h2>Iniciar sesión</h2>
-    @if (error) {
-      <div class="error">{{ error }}</div>
-    }
+  <div class="login-container">
+    <p-card class="login-card">
+      <ng-template pTemplate="header">
+        <div class="login-header">
+          <i class="pi pi-lock" style="font-size: 2.5rem; color: var(--primary-color, #007bff); margin-bottom: 0.5rem;"></i>
+          <h1>Iniciar Sesión</h1>
+          <p class="login-subtitle">Ingresa tus credenciales para acceder</p>
+        </div>
+      </ng-template>
 
-    <div class="field">
-      <label for="username">Usuario</label>
-      <input id="username" formControlName="username" />
-    </div>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <p-message 
+          *ngIf="error" 
+          severity="error" 
+          [text]="error"
+          [closable]="true"
+          (onClose)="error = null"
+          styleClass="login-error">
+        </p-message>
 
-    <div class="field">
-      <label for="accesKey">Contraseña</label>
-      <input id="accesKey" type="password" formControlName="accesKey" />
-    </div>
+        <div class="form-field">
+          <label for="username" class="field-label">
+            Usuario
+          </label>
+          <span class="p-input-icon-left" style="width: 100%;">
+            <input 
+              id="username"
+              type="text" 
+              pInputText 
+              formControlName="username"
+              placeholder="Ingresa tu usuario"
+              [class.ng-invalid]="form.get('username')?.invalid && form.get('username')?.touched"
+              style="width: 100%;"
+            />
+          </span>
+          <small 
+            class="p-error" 
+            *ngIf="form.get('username')?.invalid && form.get('username')?.touched">
+            El usuario es requerido
+          </small>
+        </div>
 
-    <button type="submit" [disabled]="loading">Entrar</button>
-  </form>
+        <div class="form-field">
+          <label for="accesKey" class="field-label">
+            Contraseña
+          </label>
+          <span class="p-input-icon-left" style="width: 100%;">
+            <p-password
+              id="accesKey"
+              formControlName="accesKey"
+              placeholder="Ingresa tu contraseña"
+              [toggleMask]="true"
+              [feedback]="false"
+              [class.ng-invalid]="form.get('accesKey')?.invalid && form.get('accesKey')?.touched"
+              styleClass="full-width"
+              inputStyleClass="full-width">
+            </p-password>
+          </span>
+          <small 
+            class="p-error" 
+            *ngIf="form.get('accesKey')?.invalid && form.get('accesKey')?.touched">
+            La contraseña es requerida
+          </small>
+        </div>
+
+        <div class="form-actions">
+          <p-button 
+            type="submit"
+            label="Entrar" 
+            icon="pi pi-sign-in"
+            [disabled]="form.invalid || loading"
+            [loading]="loading"
+            styleClass="login-button">
+          </p-button>
+        </div>
+      </form>
+    </p-card>
+  </div>
 </div>

@@ -1,50 +1,27 @@
-// ============================================
-// Estilos Globales - Sistema de Parking
-// ============================================
+/* You can add global styles to this file, and also import other style files */
 
-// Importar variables primero (usando @use en lugar de @import)
-@use './styles/variables' as *;
+/* PrimeNG v20 - Styles are handled automatically by components */
+/* PrimeIcons */
+@import "primeicons/primeicons.css";
 
-// Importar reset
-@use './styles/reset';
+/* Fuente personalizada */
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
-// Importar tipografía
-@use './styles/typography';
-
-// Importar utilidades
-@use './styles/utilities';
-
-// Importar componentes globales
-@use './styles/components';
-
-// Estilos globales adicionales
+/* Quitar scroll vertical */
 html, body {
+  overflow-x: hidden;
+  overflow-y: hidden;
   height: 100%;
   margin: 0;
   padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #ffffff;
 }
 
 body {
-  font-family: $font-family-primary;
-  background-color: $color-bg-secondary;
-  color: $color-text-primary;
-}
-
-// Scrollbar personalizado
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: $color-bg-tertiary;
-}
-
-::-webkit-scrollbar-thumb {
-  background: $color-text-tertiary;
-  border-radius: $border-radius-full;
-
-  &:hover {
-    background: $color-text-secondary;
-  }
+  position: fixed;
+  width: 100%;
+  background-color: #ffffff;
 }
