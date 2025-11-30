@@ -1,0 +1,173 @@
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #ffffff;
+  position: relative;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  z-index: 1;
+}
+
+::ng-deep .login-card {
+  .p-card {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .p-card-body {
+    padding: 2.5rem;
+  }
+
+  .p-card-content {
+    padding: 0;
+  }
+}
+
+.login-header {
+  text-align: center;
+  padding: 2rem 2rem 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+
+  h1 {
+    margin: 1rem 0 0.5rem;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .login-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #6c757d;
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.95rem;
+
+    i {
+      color: var(--primary-color, #667eea);
+    }
+  }
+
+  .p-input-icon-left,
+  .p-input-icon-right {
+    width: 100%;
+
+    i {
+      color: #6c757d;
+    }
+  }
+
+  ::ng-deep {
+    p-password {
+      width: 100%;
+
+      .p-password {
+        width: 100%;
+
+        .p-inputtext {
+          width: 100%;
+          padding-left: 2.5rem;
+        }
+
+        .p-password-toggle {
+          right: 0.75rem;
+        }
+      }
+    }
+
+    .p-input-icon-left {
+      p-password {
+        .p-password {
+          .p-inputtext {
+            padding-left: 2.5rem;
+          }
+        }
+      }
+    }
+  }
+
+  small {
+    display: block;
+    margin-top: 0.25rem;
+  }
+}
+
+::ng-deep {
+  .full-width {
+    width: 100%;
+
+    .p-inputtext,
+    .p-password-input {
+      width: 100%;
+    }
+  }
+
+  .login-error {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.form-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+::ng-deep .login-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 1rem;
+  }
+
+  .login-container {
+    max-width: 100%;
+  }
+
+  ::ng-deep .login-card {
+    .p-card-body {
+      padding: 1.5rem;
+    }
+  }
+
+  .login-header {
+    padding: 1.5rem 1.5rem 1rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+}

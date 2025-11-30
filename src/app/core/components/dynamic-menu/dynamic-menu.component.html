@@ -1,0 +1,27 @@
+<ul class="menu-list">
+  <li *ngFor="let item of menuItems" class="menu-item">
+    <a 
+      [routerLink]="item.routerLink" 
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{exact: false}"
+      class="menu-link">
+      <i *ngIf="item.icon" [class]="item.icon" class="menu-icon"></i>
+      <span class="menu-label">{{ item.label }}</span>
+      <span *ngIf="item.badge" [class]="item.badgeClass || 'menu-badge'">
+        {{ item.badge }}
+      </span>
+    </a>
+    <ul *ngIf="item.items && item.items.length > 0" class="submenu">
+      <li *ngFor="let subItem of item.items" class="submenu-item">
+        <a 
+          [routerLink]="subItem.routerLink" 
+          routerLinkActive="active"
+          class="submenu-link">
+          <i *ngIf="subItem.icon" [class]="subItem.icon" class="menu-icon"></i>
+          <span>{{ subItem.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+</ul>
+

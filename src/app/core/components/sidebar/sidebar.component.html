@@ -1,0 +1,16 @@
+<aside [class.collapsed]="collapsed" class="sidebar">
+  <div class="sidebar-header">
+    <h2 *ngIf="!collapsed" class="sidebar-title">T-Parking</h2>
+    <p-button 
+      icon="pi pi-bars" 
+      [text]="true"
+      [rounded]="true"
+      (onClick)="toggleSidebar()"
+      class="toggle-btn">
+    </p-button>
+  </div>
+  <nav class="sidebar-nav">
+    <app-dynamic-menu></app-dynamic-menu>
+  </nav>
+</aside>
+
