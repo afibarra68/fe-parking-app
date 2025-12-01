@@ -29,6 +29,12 @@ export class MenuService {
       icon: 'pi pi-briefcase',
       routerLink: '/administration/business-service',
       visible: true
+    },
+    {
+      label: 'Empresa - Servicios',
+      icon: 'pi pi-link',
+      routerLink: '/administration/company-business-service',
+      visible: true
     }
     // Aquí se pueden agregar más items del menú dinámicamente
   ]);

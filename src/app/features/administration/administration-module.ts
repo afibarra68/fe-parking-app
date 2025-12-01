@@ -6,6 +6,7 @@ import { CountriesComponent } from './countries/countries.component';
 import { ClientsComponent } from './clients/clients.component';
 import { CompaniesComponent } from './companies/companies.component';
 import { BusinessServiceComponent } from './business-service/business-service.component';
+import { CompanyBusinessServiceComponent } from './company-business-service/company-business-service.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -18,6 +19,7 @@ import { SharedModule } from '../../shared/shared-module';
     CompaniesComponent,
     ClientsComponent,
     BusinessServiceComponent,
+    CompanyBusinessServiceComponent,
     SharedModule
   ],
   exports: [

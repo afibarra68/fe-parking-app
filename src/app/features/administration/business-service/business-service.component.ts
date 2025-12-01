@@ -44,8 +44,7 @@ export class BusinessServiceComponent implements OnDestroy {
     { field: 'businessServiceId', header: 'ID', width: '80px' },
     { field: 'principalName', header: 'Nombre Principal', width: '200px' },
     { field: 'description', header: 'Descripción', width: '250px' },
-    { field: 'code', header: 'Código', width: '150px' },
-    { field: 'createdDate', header: 'Fecha Creación', width: '180px' }
+    { field: 'code', header: 'Código', width: '150px' }
   ];
 
   private tableDataSubject = new BehaviorSubject<any>({

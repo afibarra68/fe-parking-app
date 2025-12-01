@@ -43,6 +43,18 @@ export class CompanyService {
     return this.http.get<CompanyPageResponse>(`${this.apiUrl}/companies/pageable`, { params });
   }
 
+  // Listar queryable (sin paginación, para dropdowns)
+  getList(filters?: { companyName?: string; numberIdentity?: string }): Observable<Company[]> {
+    let params = new HttpParams();
+    if (filters?.companyName) {
+      params = params.set('companyName', filters.companyName);
+    }
+    if (filters?.numberIdentity) {
+      params = params.set('numberIdentity', filters.numberIdentity);
+    }
+    return this.http.get<Company[]>(`${this.apiUrl}/companies`, { params });
+  }
+
   // Crear
   create(company: Company, countryName?: string): Observable<Company> {
     const payload: any = {

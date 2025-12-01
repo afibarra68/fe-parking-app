@@ -9,7 +9,8 @@
     </p-button>
   </div>
 
-  <div class="search-bar" *ngIf="!showForm" [formGroup]="searchForm">
+  @if (!showForm) {
+  <div class="search-bar" [formGroup]="searchForm">
     <span class="p-input-icon-left">
       <i class="pi pi-search"></i>
       <input 
@@ -47,14 +48,16 @@
       </p-button>
     </div>
   </div>
+  }
 
+  @if (error) {
   <p-message 
-    *ngIf="error" 
     severity="error" 
     [text]="error"
     [closable]="true"
     (onClose)="error = null">
   </p-message>
+  }
 
   <p-dialog 
     [(visible)]="showForm" 
@@ -76,11 +79,11 @@
           formControlName="companyName"
           [class.ng-invalid]="form.get('companyName')?.invalid && form.get('companyName')?.touched"
         />
-        <small 
-          class="p-error" 
-          *ngIf="form.get('companyName')?.invalid && form.get('companyName')?.touched">
+        @if (form.get('companyName')?.invalid && form.get('companyName')?.touched) {
+        <small class="p-error">
           El nombre de empresa es requerido
         </small>
+        }
       </div>
 
       <div class="form-group">
@@ -123,7 +126,8 @@
     </form>
   </p-dialog>
 
-  <div *ngIf="!showForm" class="table-container">
+  @if (!showForm) {
+  <div class="table-container">
     <app-spinner 
       [loading]="loading"
       size="normal"
@@ -131,8 +135,8 @@
       [overlay]="true">
     </app-spinner>
     
+    @if ((tableData$ | async); as tableData) {
     <app-table-lib
-      *ngIf="(tableData$ | async) as tableData"
       [cols]="cols"
       [dataTable]="tableData"
       [hasEdit]="true"
@@ -143,6 +147,8 @@
       (onDelete)="onTableDelete($event)"
       (pagination)="onTablePagination($event)">
     </app-table-lib>
+    }
   </div>
+  }
 </div>
 
