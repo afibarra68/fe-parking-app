@@ -7,6 +7,8 @@ import { ClientsComponent } from './clients/clients.component';
 import { CompaniesComponent } from './companies/companies.component';
 import { BusinessServiceComponent } from './business-service/business-service.component';
 import { CompanyBusinessServiceComponent } from './company-business-service/company-business-service.component';
+import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
+import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -20,6 +22,8 @@ import { SharedModule } from '../../shared/shared-module';
     ClientsComponent,
     BusinessServiceComponent,
     CompanyBusinessServiceComponent,
+    VehiculosParqueadosComponent,
+    ClosedTransactionsComponent,
     SharedModule
   ],
   exports: [

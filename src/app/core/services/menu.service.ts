@@ -35,6 +35,18 @@ export class MenuService {
       icon: 'pi pi-link',
       routerLink: '/administration/company-business-service',
       visible: true
+    },
+    {
+      label: 'Vehículos Parqueados',
+      icon: 'pi pi-car',
+      routerLink: '/administration/vehiculos-parqueados',
+      visible: true
+    },
+    {
+      label: 'Transacciones Cerradas',
+      icon: 'pi pi-check-circle',
+      routerLink: '/administration/closed-transactions',
+      visible: true
     }
     // Aquí se pueden agregar más items del menú dinámicamente
   ]);
