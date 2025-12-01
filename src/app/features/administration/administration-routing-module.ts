@@ -7,6 +7,7 @@ import { BusinessServiceComponent } from './business-service/business-service.co
 import { CompanyBusinessServiceComponent } from './company-business-service/company-business-service.component';
 import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
 import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
+import { BillingPriceComponent } from './billing-price/billing-price.component';
 
 const routes: Routes = [
   {
@@ -36,6 +37,10 @@ const routes: Routes = [
   {
     path: 'closed-transactions',
     component: ClosedTransactionsComponent
+  },
+  {
+    path: 'billing-prices',
+    component: BillingPriceComponent
   },
   {
     path: '',

@@ -9,6 +9,7 @@ import { BusinessServiceComponent } from './business-service/business-service.co
 import { CompanyBusinessServiceComponent } from './company-business-service/company-business-service.component';
 import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
 import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
+import { BillingPriceComponent } from './billing-price/billing-price.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -24,6 +25,7 @@ import { SharedModule } from '../../shared/shared-module';
     CompanyBusinessServiceComponent,
     VehiculosParqueadosComponent,
     ClosedTransactionsComponent,
+    BillingPriceComponent,
     SharedModule
   ],
   exports: [

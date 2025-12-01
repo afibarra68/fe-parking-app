@@ -4,6 +4,7 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
 import { TableComponent } from './components/table/table.component';
 import { SelectComponent } from './components/dropdown/select.component';
 import { ErrorComponent } from './components/error/error.component';
+import { CalendarComponent } from './components/calendar/calendar.component';
 
 @NgModule({
   declarations: [],
@@ -12,13 +13,15 @@ import { ErrorComponent } from './components/error/error.component';
     SpinnerComponent,
     TableComponent,
     SelectComponent,
-    ErrorComponent
+    ErrorComponent,
+    CalendarComponent
   ],
   exports: [
     SpinnerComponent,
     TableComponent,
     SelectComponent,
-    ErrorComponent
+    ErrorComponent,
+    CalendarComponent
   ]
 })
 export class SharedModule { }

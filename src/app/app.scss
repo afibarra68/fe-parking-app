@@ -11,6 +11,35 @@
   pointer-events: none;
 }
 
+.app-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 64px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: left 0.3s ease;
+  
+  &.with-sidebar {
+    left: 260px;
+    
+    &.sidebar-collapsed {
+      left: 60px;
+    }
+  }
+  
+  &:not(.with-sidebar) {
+    left: 0;
+  }
+}
+
 .content-wrapper {
   flex: 1;
   display: flex;
@@ -19,6 +48,7 @@
   transition: margin-left 0.3s ease, width 0.3s ease;
   will-change: margin-left, width;
   transform: translateZ(0); // Forzar aceleración por hardware
+  padding-top: 64px; // Espacio para el header fixed
 
   &.with-sidebar {
     margin-left: 260px;
@@ -29,20 +59,6 @@
       width: calc(100% - 60px);
     }
   }
-}
-
-.app-header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e9ecef;
-  padding: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 64px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .main-content {

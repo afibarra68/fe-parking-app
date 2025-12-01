@@ -47,6 +47,12 @@ export class MenuService {
       icon: 'pi pi-check-circle',
       routerLink: '/administration/closed-transactions',
       visible: true
+    },
+    {
+      label: 'Precios de Facturación',
+      icon: 'pi pi-dollar',
+      routerLink: '/administration/billing-prices',
+      visible: true
     }
     // Aquí se pueden agregar más items del menú dinámicamente
   ]);
