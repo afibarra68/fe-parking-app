@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../../../core/services/billing-price.service';
@@ -32,7 +32,7 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
   templateUrl: './billing-price.component.html',
   styleUrls: ['./billing-price.component.scss']
 })
-export class BillingPriceComponent implements OnInit, OnDestroy {
+export class BillingPriceComponent implements OnDestroy {
   loading = false;
   showForm = false;
   editingBillingPrice: BillingPrice | null = null;
@@ -91,11 +91,7 @@ export class BillingPriceComponent implements OnInit, OnDestroy {
     });
     
     this.loadCompanies();
-  }
-
-  ngOnInit(): void {
-    // Cargar datos iniciales cuando se inicializa el componente
-    this.loadBillingPrices();
+    // Los datos se cargarán cuando la tabla dispare onTablePagination
   }
 
   loadCompanies(): void {
@@ -178,8 +174,8 @@ export class BillingPriceComponent implements OnInit, OnDestroy {
 
   onTablePagination(event: any): void {
     this.page = event.page || 0;
-    this.size = event.size || this.size;
-    this.first = this.page * this.size;
+    this.size = event.rows || environment.rowsPerPage || 10;
+    this.first = event.first || 0;
     this.loadBillingPrices();
   }
 
@@ -243,14 +239,12 @@ export class BillingPriceComponent implements OnInit, OnDestroy {
   search(): void {
     this.page = 0;
     this.first = 0;
-    this.loadBillingPrices();
+    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
   }
 
   clearSearch(): void {
     this.searchForm.reset();
-    this.page = 0;
-    this.first = 0;
-    this.loadBillingPrices();
+    this.search();
   }
 
 

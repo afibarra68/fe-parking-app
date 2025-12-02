@@ -1,0 +1,152 @@
+<div class="user-roles-container">
+  <div class="header">
+    <h1>Relaciones Usuario - Rol</h1>
+    <p-button 
+      label="Nueva Relación" 
+      icon="pi pi-plus" 
+      (onClick)="openCreateForm()" 
+      [disabled]="loading">
+    </p-button>
+  </div>
+
+  <div class="search-bar" *ngIf="!showForm" [formGroup]="searchForm">
+    <div class="search-fields">
+      <div class="search-field">
+        <label for="userRoleId">ID Relación</label>
+        <input 
+          id="userRoleId"
+          type="number" 
+          pInputText 
+          formControlName="userRoleId"
+          placeholder="ID de relación"
+        />
+      </div>
+      <div class="search-field">
+        <label for="numberIdentity">Número Identidad</label>
+        <input 
+          id="numberIdentity"
+          type="text" 
+          pInputText 
+          formControlName="numberIdentity"
+          placeholder="Número de identidad"
+        />
+      </div>
+      <div class="search-field">
+        <label for="role">Rol</label>
+        <input 
+          id="role"
+          type="text" 
+          pInputText 
+          formControlName="role"
+          placeholder="Rol"
+        />
+      </div>
+    </div>
+    <div class="search-actions">
+      <p-button 
+        label="Buscar" 
+        icon="pi pi-search" 
+        (onClick)="search()" 
+        [disabled]="loading"
+        styleClass="p-button-secondary">
+      </p-button>
+      <p-button 
+        label="Limpiar" 
+        icon="pi pi-times" 
+        (onClick)="clearSearch()" 
+        [disabled]="loading"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </div>
+
+  <p-message 
+    *ngIf="error" 
+    severity="error" 
+    [text]="error"
+    [closable]="true"
+    (onClose)="error = null">
+  </p-message>
+
+  <p-dialog 
+    [(visible)]="showForm" 
+    [header]="editingUserRole ? 'Editar Relación Usuario-Rol' : 'Nueva Relación Usuario-Rol'"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [closable]="true"
+    (onHide)="cancelForm()">
+    <form [formGroup]="form" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <label for="numberIdentity">Número de Identidad *</label>
+        <input 
+          id="numberIdentity"
+          type="text" 
+          pInputText 
+          formControlName="numberIdentity"
+          [class.ng-invalid]="form.get('numberIdentity')?.invalid && form.get('numberIdentity')?.touched"
+        />
+        <small 
+          class="p-error" 
+          *ngIf="form.get('numberIdentity')?.invalid && form.get('numberIdentity')?.touched">
+          El número de identidad es requerido
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Rol *</label>
+        <app-select-lib
+          formControlName="role"
+          [options]="roles"
+          label=""
+          [showClear]="false">
+        </app-select-lib>
+        <small 
+          class="p-error" 
+          *ngIf="form.get('role')?.invalid && form.get('role')?.touched">
+          El rol es requerido
+        </small>
+      </div>
+
+      <div class="form-actions">
+        <p-button 
+          type="submit"
+          [label]="loading ? 'Guardando...' : (editingUserRole ? 'Actualizar' : 'Crear')"
+          icon="pi pi-check"
+          [disabled]="form.invalid || loading"
+          [loading]="loading">
+        </p-button>
+        <p-button 
+          type="button"
+          label="Cancelar" 
+          icon="pi pi-times"
+          (onClick)="cancelForm()" 
+          [disabled]="loading"
+          styleClass="p-button-secondary">
+        </p-button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <div *ngIf="!showForm" class="table-container">
+    <app-spinner 
+      [loading]="loading"
+      size="normal"
+      message="Cargando relaciones usuario-rol..."
+      [overlay]="true">
+    </app-spinner>
+    
+    <app-table-lib
+      *ngIf="(tableData$ | async) as tableData"
+      [cols]="cols"
+      [dataTable]="tableData"
+      [hasEdit]="true"
+      [hasDelete]="true"
+      [hasDetail]="false"
+      [hasReport]="false"
+      (onEdit)="onTableEdit($event)"
+      (onDelete)="onTableDelete($event)"
+      (pagination)="onTablePagination($event)">
+    </app-table-lib>
+  </div>
+</div>
+

@@ -63,11 +63,11 @@
     [(visible)]="showForm" 
     [header]="editingCompany ? 'Editar Empresa' : 'Nueva Empresa'"
     [modal]="true"
-    [style]="{width: '600px', maxHeight: '90vh'}"
+    [style]="{width: '600px'}"
     [closable]="true"
     [draggable]="false"
     [resizable]="false"
-    [contentStyle]="{overflow: 'auto', maxHeight: 'calc(90vh - 100px)'}"
+    [contentStyle]="{overflow: 'visible', padding: '1rem'}"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">
       <div class="form-group">

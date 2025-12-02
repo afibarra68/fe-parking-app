@@ -79,25 +79,8 @@
 
 .sidebar-nav {
   flex: 1;
-  overflow-y: auto;
+  overflow: visible;
   padding: 1rem 0.5rem;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-
-    &:hover {
-      background: #a8a8a8;
-    }
-  }
 }
 
 // Responsive

@@ -33,6 +33,7 @@
   transition: all 0.2s;
   gap: 0.75rem;
   position: relative;
+  cursor: pointer;
 
   &:hover {
     background-color: #f8f9fa;
@@ -46,6 +47,12 @@
     .menu-icon {
       color: white;
     }
+  }
+
+  &.menu-parent {
+    cursor: default;
+    font-weight: 600;
+    color: #495057;
   }
 }
 

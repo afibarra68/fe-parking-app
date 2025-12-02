@@ -53,6 +53,25 @@ export class MenuService {
       icon: 'pi pi-dollar',
       routerLink: '/administration/billing-prices',
       visible: true
+    },
+    {
+      label: 'Usuarios',
+      icon: 'pi pi-user',
+      visible: true,
+      items: [
+        {
+          label: 'Gestión de Usuarios',
+          icon: 'pi pi-users',
+          routerLink: '/administration/users',
+          visible: true
+        },
+        {
+          label: 'Relaciones Usuario-Rol',
+          icon: 'pi pi-link',
+          routerLink: '/administration/user-roles',
+          visible: true
+        }
+      ]
     }
     // Aquí se pueden agregar más items del menú dinámicamente
   ]);

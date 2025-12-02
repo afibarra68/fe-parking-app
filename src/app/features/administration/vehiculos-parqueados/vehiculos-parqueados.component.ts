@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { VehiculosParqueadosService, VehiculoParqueado, Page } from '../../../core/services/vehiculos-parqueados.service';
@@ -26,7 +26,7 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
   templateUrl: './vehiculos-parqueados.component.html',
   styleUrls: ['./vehiculos-parqueados.component.scss']
 })
-export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
+export class VehiculosParqueadosComponent implements OnDestroy {
   loading = false;
   error: string | null = null;
   
@@ -48,6 +48,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   cols: TableColumn[] = [
     { field: 'openTransactionId', header: 'ID', width: '80px' },
     { field: 'vehiclePlate', header: 'Placa', width: '120px' },
+    { field: 'tipoVehiculo', header: 'Tipo de Vehículo', width: '150px' },
     { field: 'startDay', header: 'Fecha Inicio', width: '120px' },
     { field: 'startTime', header: 'Hora Inicio', width: '120px' },
     { field: 'status', header: 'Estado', width: '100px' },
@@ -66,10 +67,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       status: ['OPEN'],
       companyCompanyId: [null]
     });
-  }
-
-  ngOnInit(): void {
-    this.loadVehiculos();
+    // Los datos se cargarán cuando la tabla dispare onTablePagination
   }
 
   ngOnDestroy(): void {
@@ -79,6 +77,10 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   }
 
   loadVehiculos(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+
     this.loading = true;
     this.error = null;
 
@@ -94,16 +96,21 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       .getPageable(this.page, this.size, filters)
       .subscribe({
         next: (response: Page<VehiculoParqueado>) => {
-          this.loading = false;
           this.tableDataSubject.next({
             data: response.content || [],
             totalRecords: response.totalElements || 0,
-            isFirst: response.first
+            isFirst: this.page === 0
           });
-        },
-        error: (err) => {
           this.loading = false;
-          this.error = err?.error?.message || 'Error al cargar vehículos parqueados';
+        },
+        error: (err: any) => {
+          this.error = err?.error?.message || err?.message || 'Error al cargar vehículos parqueados';
+          this.tableDataSubject.next({
+            data: [],
+            totalRecords: 0,
+            isFirst: true
+          });
+          this.loading = false;
         }
       });
   }
@@ -111,7 +118,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   search(): void {
     this.page = 0;
     this.first = 0;
-    this.loadVehiculos();
+    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
   }
 
   clearSearch(): void {
@@ -119,15 +126,13 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       status: 'OPEN',
       companyCompanyId: null
     });
-    this.page = 0;
-    this.first = 0;
-    this.loadVehiculos();
+    this.search();
   }
 
   onTablePagination(event: any): void {
-    this.page = event.page;
-    this.first = event.first;
-    this.size = event.rows;
+    this.page = event.page || 0;
+    this.size = event.rows || environment.rowsPerPage || 10;
+    this.first = event.first || 0;
     this.loadVehiculos();
   }
 

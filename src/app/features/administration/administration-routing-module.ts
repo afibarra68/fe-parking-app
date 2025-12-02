@@ -8,6 +8,8 @@ import { CompanyBusinessServiceComponent } from './company-business-service/comp
 import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
 import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
 import { BillingPriceComponent } from './billing-price/billing-price.component';
+import { UsersComponent } from './users/users.component';
+import { UserRolesComponent } from './user-roles/user-roles.component';
 
 const routes: Routes = [
   {
@@ -41,6 +43,14 @@ const routes: Routes = [
   {
     path: 'billing-prices',
     component: BillingPriceComponent
+  },
+  {
+    path: 'users',
+    component: UsersComponent
+  },
+  {
+    path: 'user-roles',
+    component: UserRolesComponent
   },
   {
     path: '',
