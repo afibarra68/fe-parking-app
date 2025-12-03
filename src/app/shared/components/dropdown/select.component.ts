@@ -15,8 +15,41 @@ import { ErrorComponent } from '../error/error.component';
     ErrorComponent
   ],
   template: `
-    <div class="p-field p-col-12 p-md-6 p-lg-3 p-pt-3">
-      <span class="p-float-label">
+    <div class="select-field">
+      @if (label && !floatLabel) {
+        <label class="select-label">
+          {{ label }} 
+          @if (control && control.errors?.['required']) {
+            <span style="font-weight: 900;">*</span>
+          }
+        </label>
+      }
+      @if (floatLabel) {
+        <span class="p-float-label">
+          <p-select
+            emptyMessage="NO RECORDS FOUND"
+            [formControl]="control"
+            [options]="options"
+            [filter]="filter"
+            [showClear]="showClear && !readonly"
+            [readonly]="readonly"
+            [virtualScroll]="virtualScroll"
+            [virtualScrollItemSize]="itemSize"
+            [scrollHeight]="scrollHeight"
+            [appendTo]="appendTo"
+            (onChange)="onChange.emit($event)"
+            (onLazyLoad)="onLazyLoad.emit($event)"
+            optionLabel="label"
+            optionValue="value">
+          </p-select>
+          <label for="dropdown">
+            {{ label }} 
+            @if (control && control.errors?.['required']) {
+              <span style="font-weight: 900;">*</span>
+            }
+          </label>
+        </span>
+      } @else {
         <p-select
           emptyMessage="NO RECORDS FOUND"
           [formControl]="control"
@@ -26,28 +59,38 @@ import { ErrorComponent } from '../error/error.component';
           [readonly]="readonly"
           [virtualScroll]="virtualScroll"
           [virtualScrollItemSize]="itemSize"
+          [scrollHeight]="scrollHeight"
           [appendTo]="appendTo"
           (onChange)="onChange.emit($event)"
           (onLazyLoad)="onLazyLoad.emit($event)"
           optionLabel="label"
           optionValue="value">
         </p-select>
-        <label for="dropdown">
-          {{ label }} 
-          @if (control && control.errors?.['required']) {
-            <span style="font-weight: 900;">*</span>
-          }
-        </label>
-      </span>
+      }
       <app-error [input]="control"></app-error>
     </div>
   `,
   styles: [`
     :host {
       display: block;
+      width: 100%;
+    }
+    .select-field {
+      width: 100%;
+    }
+    .select-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #555;
     }
     .w-full {
       width: 100%;
+    }
+    ::ng-deep {
+      .p-select {
+        width: 100%;
+      }
     }
   `]
 })
@@ -64,6 +107,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
   @Input() scrollHeight: string = '200px';
   @Input() lazy = false;
   @Input() totalRecords = 0;
+  @Input() floatLabel: boolean = false; // Si es true, usa p-float-label, si es false, label arriba
   @Output() onChange = new EventEmitter<any>();
   @Output() onLazyLoad = new EventEmitter<any>();
 

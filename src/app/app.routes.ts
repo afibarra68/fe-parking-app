@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 import { authGuard } from './core/guards/auth.guard';
+import { notFoundGuard } from './core/guards/not-found.guard';
 
 export const routes: Routes = [
   {
@@ -20,6 +21,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: '/auth/login'
+    canActivate: [notFoundGuard],
+    redirectTo: ''
   }
 ];

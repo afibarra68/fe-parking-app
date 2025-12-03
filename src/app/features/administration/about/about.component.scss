@@ -1,0 +1,331 @@
+.about-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: visible;
+}
+
+.about-header {
+  text-align: center;
+  margin-bottom: 1rem;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #212529;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin: 0;
+  }
+}
+
+.about-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.card-horizontal-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: auto;
+  overflow: visible;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    min-height: auto;
+  }
+}
+
+::ng-deep {
+  .info-card {
+    width: 100%;
+    max-width: 800px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-bottom: 2px solid #e9ecef;
+
+    .p-card-body {
+      padding: 0;
+    }
+
+    .p-card-content {
+      padding: 0;
+    }
+  }
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, #0056b3 100%);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  color: #ffffff;
+  min-width: 220px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+    max-width: 100%;
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+  }
+
+  i {
+    font-size: 2rem !important;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &.multi-company {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  }
+
+  .multi-company-badge {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #ffffff;
+    opacity: 0.9;
+  }
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 1.1rem;
+  color: #6c757d;
+}
+
+.card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  overflow: visible;
+}
+
+.info-section {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: #6c757d;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .version-badge {
+    display: inline-block;
+    background-color: var(--primary-color, #007bff);
+    color: #ffffff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+    color: #495057;
+
+    i {
+      color: var(--primary-color, #007bff);
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    span {
+      flex: 1;
+    }
+  }
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #495057;
+
+  i {
+    color: var(--primary-color, #007bff);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e9ecef;
+  margin: 1rem 0;
+}
+
+.card-footer {
+  text-align: center;
+  padding: 0.75rem 1.5rem;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  margin-top: auto;
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #6c757d;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .about-container {
+    padding: 1rem;
+    min-height: auto;
+    justify-content: flex-start;
+  }
+
+  .about-header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+    }
+  }
+
+  .about-content {
+    padding: 1rem 0;
+    align-items: stretch;
+  }
+
+  ::ng-deep {
+    .info-card {
+      max-width: 100%;
+    }
+  }
+
+  .card-header {
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+
+    i {
+      font-size: 1.5rem !important;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+    }
+
+    .multi-company-badge {
+      font-size: 0.8rem;
+    }
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-horizontal-layout {
+    min-height: auto;
+    max-height: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-container {
+    padding: 0.75rem;
+  }
+
+  .about-header {
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+    }
+  }
+
+  .card-header {
+    padding: 1rem;
+  }
+
+  .card-body {
+    padding: 0.75rem;
+  }
+
+  .info-section {
+    margin-bottom: 0.75rem;
+
+    h3 {
+      font-size: 0.95rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+    }
+  }
+}
+

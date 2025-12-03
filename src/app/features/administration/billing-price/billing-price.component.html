@@ -89,14 +89,30 @@
         />
       </div>
 
-      <div class="form-group">
-        <label for="coverType">Tipo de Cobertura</label>
-        <input 
-          id="coverType"
-          type="text" 
-          pInputText 
-          formControlName="coverType"
-        />
+      <div class="form-row">
+        <div class="form-group">
+          <app-select-lib
+            formControlName="tipoVehiculo"
+            [options]="tipoVehiculoOptions"
+            label="Tipo de Vehículo"
+            [filter]="false"
+            [showClear]="true"
+            [floatLabel]="false"
+            [virtualScroll]="false"
+            [scrollHeight]="'300px'"
+            [appendTo]="'body'">
+          </app-select-lib>
+        </div>
+
+        <div class="form-group">
+          <label for="coverType">Tipo de Cobertura</label>
+          <input 
+            id="coverType"
+            type="text" 
+            pInputText 
+            formControlName="coverType"
+          />
+        </div>
       </div>
 
       <div class="form-row">
@@ -137,24 +153,31 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <p-checkbox
-          formControlName="applyDiscount"
-          inputId="applyDiscount"
-          [binary]="true"
-          label="Aplicar Descuento">
-        </p-checkbox>
-      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <app-select-lib
+            formControlName="companyCompanyId"
+            [options]="companyOptions"
+            label="Empresa"
+            [filter]="false"
+            [showClear]="true"
+            [floatLabel]="false"
+            [virtualScroll]="false"
+            [scrollHeight]="'300px'"
+            [appendTo]="'body'">
+          </app-select-lib>
+        </div>
 
-      <div class="form-group">
-        <label for="discountDiscountId">ID Descuento</label>
-        <p-inputNumber
-          id="discountDiscountId"
-          formControlName="discountDiscountId"
-          [showButtons]="true"
-          [useGrouping]="false"
-          placeholder="ID del descuento">
-        </p-inputNumber>
+        <div class="form-group">
+          <label for="discountDiscountId">ID Descuento</label>
+          <p-inputNumber
+            id="discountDiscountId"
+            formControlName="discountDiscountId"
+            [showButtons]="true"
+            [useGrouping]="false"
+            placeholder="ID del descuento">
+          </p-inputNumber>
+        </div>
       </div>
 
       <div class="form-group">
@@ -174,13 +197,14 @@
         }
       </div>
 
-      <app-select-lib
-        formControlName="companyCompanyId"
-        [options]="companyOptions"
-        label="Empresa"
-        [filter]="false"
-        [appendTo]="'body'">
-      </app-select-lib>
+      <div class="form-group">
+        <label for="applyDiscount">Aplica Descuento</label>
+        <p-checkbox
+          formControlName="applyDiscount"
+          inputId="applyDiscount"
+          [binary]="true">
+        </p-checkbox>
+      </div>
 
       <div class="form-actions">
         <p-button 

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { AdministrationRoutingModule } from './administration-routing-module';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { CountriesComponent } from './countries/countries.component';
 import { ClientsComponent } from './clients/clients.component';
 import { CompaniesComponent } from './companies/companies.component';
@@ -10,6 +11,7 @@ import { CompanyBusinessServiceComponent } from './company-business-service/comp
 import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
 import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
 import { BillingPriceComponent } from './billing-price/billing-price.component';
+import { AboutComponent } from './about/about.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -18,6 +20,7 @@ import { SharedModule } from '../../shared/shared-module';
   imports: [
     CommonModule,
     AdministrationRoutingModule,
+    DashboardComponent,
     CountriesComponent,
     CompaniesComponent,
     ClientsComponent,
@@ -26,6 +29,7 @@ import { SharedModule } from '../../shared/shared-module';
     VehiculosParqueadosComponent,
     ClosedTransactionsComponent,
     BillingPriceComponent,
+    AboutComponent,
     SharedModule
   ],
   exports: [

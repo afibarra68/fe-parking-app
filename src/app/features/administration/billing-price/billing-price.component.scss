@@ -99,6 +99,11 @@
       
       .p-select-overlay {
         z-index: 10000 !important;
+        
+        .p-select-list {
+          overflow-y: auto !important;
+          max-height: 300px !important;
+        }
       }
     }
     
@@ -107,6 +112,19 @@
       
       .p-field {
         width: 100%;
+      }
+      
+      ::ng-deep {
+        .p-select-overlay {
+          .p-select-list {
+            overflow-y: auto !important;
+            max-height: 300px !important;
+            
+            .p-select-item {
+              cursor: pointer;
+            }
+          }
+        }
       }
     }
   }
@@ -121,6 +139,21 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  ::ng-deep {
+    app-select-lib {
+      width: 100%;
+      
+      .select-field {
+        width: 100%;
+      }
+    }
+  }
 }
 
 .form-actions {

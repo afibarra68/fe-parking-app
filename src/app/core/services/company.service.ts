@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Country } from './country.service';
 
@@ -53,6 +54,11 @@ export class CompanyService {
       params = params.set('numberIdentity', filters.numberIdentity);
     }
     return this.http.get<Company[]>(`${this.apiUrl}/companies`, { params });
+  }
+
+  // Obtener empresa del usuario autenticado (sin parámetros)
+  getCurrentUserCompany(): Observable<Company> {
+    return this.http.get<Company>(`${this.apiUrl}/companies/current`);
   }
 
   // Crear

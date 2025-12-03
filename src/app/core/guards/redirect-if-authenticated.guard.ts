@@ -11,8 +11,8 @@ export const redirectIfAuthenticatedGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   if (authService.isAuthenticated()) {
-    // Si tiene token, redirigir a companies
-    router.navigate(['/administration/companies']);
+    // Si tiene token, redirigir a dashboard
+    router.navigate(['/administration/dashboard']);
     return false; // No permitir acceso a la ruta actual
   }
 

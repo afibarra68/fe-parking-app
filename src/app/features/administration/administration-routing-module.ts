@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { CountriesComponent } from './countries/countries.component';
 import { ClientsComponent } from './clients/clients.component';
 import { CompaniesComponent } from './companies/companies.component';
@@ -10,8 +11,13 @@ import { ClosedTransactionsComponent } from './closed-transactions/closed-transa
 import { BillingPriceComponent } from './billing-price/billing-price.component';
 import { UsersComponent } from './users/users.component';
 import { UserRolesComponent } from './user-roles/user-roles.component';
+import { AboutComponent } from './about/about.component';
 
 const routes: Routes = [
+  {
+    path: 'dashboard',
+    component: DashboardComponent
+  },
   {
     path: 'countries',
     component: CountriesComponent
@@ -53,8 +59,12 @@ const routes: Routes = [
     component: UserRolesComponent
   },
   {
+    path: 'about',
+    component: AboutComponent
+  },
+  {
     path: '',
-    redirectTo: 'countries',
+    redirectTo: 'dashboard',
     pathMatch: 'full'
   }
 ];

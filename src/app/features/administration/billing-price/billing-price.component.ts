@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../../../core/services/billing-price.service';
 import { CompanyService, Company } from '../../../core/services/company.service';
+import { TipoVehiculoService, TipoVehiculo } from '../../../core/services/tipo-vehiculo.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -38,6 +39,7 @@ export class BillingPriceComponent implements OnDestroy {
   editingBillingPrice: BillingPrice | null = null;
   error: string | null = null;
   companyOptions: SelectItem[] = [];
+  tipoVehiculoOptions: SelectItem[] = [];
   
   // Paginación
   page: number = 0;
@@ -46,6 +48,7 @@ export class BillingPriceComponent implements OnDestroy {
   
   private subscription?: Subscription;
   private companiesSubscription?: Subscription;
+  private tipoVehiculoSubscription?: Subscription;
   
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
@@ -71,6 +74,7 @@ export class BillingPriceComponent implements OnDestroy {
   constructor(
     private billingPriceService: BillingPriceService,
     private companyService: CompanyService,
+    private tipoVehiculoService: TipoVehiculoService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -81,7 +85,8 @@ export class BillingPriceComponent implements OnDestroy {
       companyCompanyId: [null],
       start: [null, [Validators.min(1), Validators.max(5)]],
       end: [null, [Validators.min(1), Validators.max(5)]],
-      mount: [null, [Validators.min(0)]]
+      mount: [null, [Validators.min(0)]],
+      tipoVehiculo: [null]
     });
 
     this.searchForm = this.fb.group({
@@ -91,6 +96,7 @@ export class BillingPriceComponent implements OnDestroy {
     });
     
     this.loadCompanies();
+    this.loadTiposVehiculo();
     // Los datos se cargarán cuando la tabla dispare onTablePagination
   }
 
@@ -111,6 +117,24 @@ export class BillingPriceComponent implements OnDestroy {
           this.companyOptions = [];
         }
       });
+  }
+
+  loadTiposVehiculo(): void {
+    if (this.tipoVehiculoSubscription) {
+      this.tipoVehiculoSubscription.unsubscribe();
+    }
+    this.tipoVehiculoSubscription = this.tipoVehiculoService.getAll().subscribe({
+      next: (tipos: TipoVehiculo[]) => {
+        this.tipoVehiculoOptions = tipos.map(tipo => ({
+          label: tipo.description,
+          value: tipo.id
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar tipos de vehículo:', err);
+        this.tipoVehiculoOptions = [];
+      }
+    });
   }
 
   loadBillingPrices(): void {
@@ -147,7 +171,8 @@ export class BillingPriceComponent implements OnDestroy {
   openCreateForm(): void {
     this.editingBillingPrice = null;
     this.form.reset({
-      applyDiscount: false
+      applyDiscount: false,
+      tipoVehiculo: null
     });
     this.showForm = true;
   }
@@ -163,7 +188,8 @@ export class BillingPriceComponent implements OnDestroy {
       companyCompanyId: event.companyCompanyId || null,
       start: event.start || null,
       end: event.end || null,
-      mount: event.mount || null
+      mount: event.mount || null,
+      tipoVehiculo: event.tipoVehiculo || null
     });
     this.showForm = true;
   }
@@ -198,7 +224,8 @@ export class BillingPriceComponent implements OnDestroy {
       companyCompanyId: formValue.companyCompanyId || null,
       start: formValue.start || null,
       end: formValue.end || null,
-      mount: formValue.mount || null
+      mount: formValue.mount || null,
+      tipoVehiculo: formValue.tipoVehiculo || null
     };
 
     const operation = this.editingBillingPrice
@@ -230,7 +257,8 @@ export class BillingPriceComponent implements OnDestroy {
       companyCompanyId: null,
       start: null,
       end: null,
-      mount: null
+      mount: null,
+      tipoVehiculo: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
@@ -254,6 +282,9 @@ export class BillingPriceComponent implements OnDestroy {
     }
     if (this.companiesSubscription) {
       this.companiesSubscription.unsubscribe();
+    }
+    if (this.tipoVehiculoSubscription) {
+      this.tipoVehiculoSubscription.unsubscribe();
     }
   }
 }

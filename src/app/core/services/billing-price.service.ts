@@ -14,6 +14,7 @@ export interface BillingPrice {
   start?: number;
   end?: number;
   mount?: number;
+  tipoVehiculo?: string;
 }
 
 export interface BillingPricePageResponse {

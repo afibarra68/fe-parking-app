@@ -19,6 +19,12 @@ export class MenuService {
       visible: true
     },
     {
+      label: 'Información de la Empresa',
+      icon: 'pi pi-info-circle',
+      routerLink: '/administration/about',
+      visible: true
+    },
+    {
       label: 'Clientes',
       icon: 'pi pi-users',
       routerLink: '/administration/clients',

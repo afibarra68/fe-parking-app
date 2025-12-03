@@ -1,0 +1,28 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Módulos del Sistema</h1>
+    <p class="subtitle">Selecciona un módulo para acceder a su funcionalidad</p>
+  </div>
+
+  <div class="modules-grid">
+    <div 
+      *ngFor="let module of modules" 
+      class="module-card-wrapper">
+      <p-card 
+        class="module-card"
+        [styleClass]="'cursor-pointer'"
+        (click)="navigateToModule(module.routerLink)">
+        <ng-template pTemplate="header">
+          <div class="module-header">
+            <i [class]="module.icon" class="module-icon"></i>
+          </div>
+        </ng-template>
+        <div class="module-content">
+          <h3 class="module-title">{{ module.label }}</h3>
+          <p class="module-description">{{ module.description }}</p>
+        </div>
+      </p-card>
+    </div>
+  </div>
+</div>
+
