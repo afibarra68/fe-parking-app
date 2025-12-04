@@ -11,31 +11,41 @@
 
   @if (!showForm()) {
   <div class="search-bar" [formGroup]="searchForm">
-    <input 
-      type="text" 
-      pInputText 
-      formControlName="status"
-      placeholder="Buscar por estado..."
-      (keyup.enter)="search()"
-    />
-    <app-select-lib
-      formControlName="tipoVehiculo"
-      [options]="tipoVehiculoOptions()"
-      label="Tipo de Vehículo"
-      [filter]="false"
-      [showClear]="true"
-      [floatLabel]="false"
-      [appendTo]="'body'">
-    </app-select-lib>
-    <app-select-lib
-      formControlName="companyCompanyId"
-      [options]="companyOptions()"
-      label="Empresa"
-      [filter]="false"
-      [showClear]="true"
-      [floatLabel]="false"
-      [appendTo]="'body'">
-    </app-select-lib>
+    <div class="search-fields">
+      <div class="search-field">
+        <label for="status">Estado</label>
+        <input 
+          id="status"
+          type="text" 
+          pInputText 
+          formControlName="status"
+          placeholder="Buscar por estado..."
+          (keyup.enter)="search()"
+        />
+      </div>
+      <div class="search-field">
+        <app-select-lib
+          formControlName="tipoVehiculo"
+          [options]="tipoVehiculoOptions()"
+          label="Tipo de Vehículo"
+          [filter]="false"
+          [showClear]="true"
+          [floatLabel]="false"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib
+          formControlName="companyCompanyId"
+          [options]="companyOptions()"
+          label="Empresa"
+          [filter]="false"
+          [showClear]="true"
+          [floatLabel]="false"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+    </div>
     <div class="search-actions">
       <p-button 
         label="Buscar" 

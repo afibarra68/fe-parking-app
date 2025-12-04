@@ -133,6 +133,22 @@ export class AuthService {
         })
       );
   }
+
+  validateToken(): Observable<{ valid: boolean; message: string }> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token disponible'));
+    }
+    
+    // El interceptor HTTP agregará automáticamente el header Authorization
+    return this.http.get<{ valid: boolean; message: string }>(`${this.apiUrl}/auth/validate`)
+      .pipe(
+        catchError(error => {
+          console.error('Error al validar token:', error);
+          return throwError(() => error);
+        })
+      );
+  }
 }
 
 

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
@@ -33,7 +33,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private auth: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.form = this.fb.group({
       username: ['', Validators.required],
@@ -49,9 +50,11 @@ export class LoginComponent {
     this.auth.login(credentials).subscribe({
       next: () => {
         this.loading = false;
+        // Obtener la URL de retorno de los query params, o usar dashboard por defecto
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/administration/dashboard';
         // Pequeño delay antes de navegar para evitar que el sidebar aparezca brevemente
         setTimeout(() => {
-          this.router.navigate(['/administration/dashboard']);
+          this.router.navigateByUrl(returnUrl);
         }, 100);
       },
       error: (err) => {

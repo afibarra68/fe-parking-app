@@ -3,19 +3,45 @@ import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Guard que redirige a companies si el usuario ya está autenticado
- * Útil para evitar que usuarios autenticados vean la página de login
+ * Roles que tienen acceso a la administración
+ * Si el usuario tiene alguno de estos roles y está autenticado,
+ * se redirige al dashboard en lugar de permitir acceso al login
+ */
+const ADMIN_ROLES = [
+  'SUPER_USER',
+  'SUPER_ADMIN',
+  'ADMINISTRATOR_PRINCIPAL',
+  'ADMIN_APP',
+  'USER_APP',
+  'AUDIT_SELLER',
+  'PARKING_ATTENDANT'
+];
+
+/**
+ * Guard que previene que usuarios autenticados con roles administrativos
+ * accedan a las páginas de autenticación
+ * Si el usuario tiene un rol administrativo y está autenticado, redirige al dashboard
+ * Si no está autenticado o no tiene rol administrativo, permite acceso al login
  */
 export const redirectIfAuthenticatedGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
-    // Si tiene token, redirigir a dashboard
-    router.navigate(['/administration/dashboard']);
-    return false; // No permitir acceso a la ruta actual
+  // Si no está autenticado, permitir acceso al login
+  if (!authService.isAuthenticated()) {
+    return true;
   }
 
-  return true; // Permitir acceso si no está autenticado
+  // Verificar si el usuario tiene algún rol administrativo
+  const hasAdminRole = ADMIN_ROLES.some(role => authService.hasRole(role));
+
+  // Si tiene rol administrativo, redirigir al dashboard
+  if (hasAdminRole) {
+    router.navigate(['/administration/dashboard'], { replaceUrl: true });
+    return false;
+  }
+
+  // Si está autenticado pero no tiene rol administrativo, permitir acceso al login
+  return true;
 };
 

@@ -1,13 +1,12 @@
 import { Routes } from '@angular/router';
-import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 import { authGuard } from './core/guards/auth.guard';
-import { notFoundGuard } from './core/guards/not-found.guard';
+import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    canActivate: [redirectIfAuthenticatedGuard],
-    loadChildren: () => import('./features/auth/auth-module').then(m => m.AuthModule)
+    redirectTo: '/administration/dashboard',
+    pathMatch: 'full'
   },
   {
     path: 'auth',
@@ -21,7 +20,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    canActivate: [notFoundGuard],
-    redirectTo: ''
+    redirectTo: '/administration/dashboard'
   }
 ];
