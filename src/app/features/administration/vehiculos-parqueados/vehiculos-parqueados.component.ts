@@ -51,7 +51,7 @@ export class VehiculosParqueadosComponent implements OnDestroy {
     { field: 'tipoVehiculo', header: 'Tipo de Vehículo', width: '150px' },
     { field: 'startDay', header: 'Fecha Inicio', width: '120px' },
     { field: 'startTime', header: 'Hora Inicio', width: '120px' },
-    { field: 'status', header: 'Estado', width: '100px' },
+    { field: 'statusDisplay', header: 'Estado', width: '150px' },
     { field: 'timeElapsed', header: 'Tiempo Transcurrido', width: '150px' },
     { field: 'companyCompanyId', header: 'ID Empresa', width: '120px' },
     { field: 'operationDate', header: 'Fecha Operación', width: '150px' }
@@ -96,8 +96,13 @@ export class VehiculosParqueadosComponent implements OnDestroy {
       .getPageable(this.page, this.size, filters)
       .subscribe({
         next: (response: Page<VehiculoParqueado>) => {
+          // Formatear status para mostrar en la tabla
+          const formattedData = (response.content || []).map(item => ({
+            ...item,
+            statusDisplay: this.formatStatus(item.status)
+          }));
           this.tableDataSubject.next({
-            data: response.content || [],
+            data: formattedData,
             totalRecords: response.totalElements || 0,
             isFirst: this.page === 0
           });
@@ -144,6 +149,23 @@ export class VehiculosParqueadosComponent implements OnDestroy {
   onTableDelete(row: any): void {
     // Lógica para eliminar si es necesario
     console.log('Eliminar:', row);
+  }
+
+  /**
+   * Formatea el status para mostrar en la tabla
+   * OPEN -> "Dentro del parqueadero"
+   * CLOSED -> "Cobrada"
+   */
+  formatStatus(status: string | undefined): string {
+    if (!status) return '';
+    switch (status.toUpperCase()) {
+      case 'OPEN':
+        return 'Dentro del parqueadero';
+      case 'CLOSED':
+        return 'Cobrada';
+      default:
+        return status;
+    }
   }
 }
 

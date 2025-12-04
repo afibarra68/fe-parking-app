@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, signal, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../../../core/services/billing-price.service';
@@ -14,7 +14,9 @@ import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { SelectItem } from 'primeng/api';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, finalize, shareReplay } from 'rxjs/operators';
 
 @Component({
   selector: 'app-billing-price',
@@ -33,22 +35,24 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
   templateUrl: './billing-price.component.html',
   styleUrls: ['./billing-price.component.scss']
 })
-export class BillingPriceComponent implements OnDestroy {
-  loading = false;
-  showForm = false;
-  editingBillingPrice: BillingPrice | null = null;
-  error: string | null = null;
-  companyOptions: SelectItem[] = [];
-  tipoVehiculoOptions: SelectItem[] = [];
+export class BillingPriceComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
+  
+  // Signals para mejor rendimiento y reactividad
+  loading = signal(false);
+  showForm = signal(false);
+  editingBillingPrice = signal<BillingPrice | null>(null);
+  error = signal<string | null>(null);
+  companyOptions = signal<SelectItem[]>([]);
+  tipoVehiculoOptions = signal<SelectItem[]>([]);
+  
+  // Cache para mapeo rápido de tipoVehiculo
+  private tipoVehiculoMap = new Map<string, string>();
   
   // Paginación
-  page: number = 0;
-  size: number = environment.rowsPerPage || 10;
-  first = 0;
-  
-  private subscription?: Subscription;
-  private companiesSubscription?: Subscription;
-  private tipoVehiculoSubscription?: Subscription;
+  page = signal(0);
+  size = signal(environment.rowsPerPage || 10);
+  first = signal(0);
   
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
@@ -62,6 +66,7 @@ export class BillingPriceComponent implements OnDestroy {
     { field: 'billingPriceId', header: 'ID', width: '80px' },
     { field: 'status', header: 'Estado', width: '120px' },
     { field: 'coverType', header: 'Tipo de Cobertura', width: '150px' },
+    { field: 'tipoVehiculoDisplay', header: 'Tipo de Vehículo', width: '150px' },
     { field: 'start', header: 'Inicio (horas)', width: '120px' },
     { field: 'end', header: 'Fin (horas)', width: '120px' },
     { field: 'mount', header: 'Monto', width: '120px' },
@@ -83,102 +88,119 @@ export class BillingPriceComponent implements OnDestroy {
       applyDiscount: [false],
       discountDiscountId: [null],
       companyCompanyId: [null],
-      start: [null, [Validators.min(1), Validators.max(5)]],
-      end: [null, [Validators.min(1), Validators.max(5)]],
+      start: [null, [Validators.min(1)]],
+      end: [null, [Validators.min(1)]],
       mount: [null, [Validators.min(0)]],
       tipoVehiculo: [null]
     });
 
     this.searchForm = this.fb.group({
       status: [''],
-      coverType: [''],
+      tipoVehiculo: [null],
       companyCompanyId: [null]
     });
-    
-    this.loadCompanies();
-    this.loadTiposVehiculo();
-    // Los datos se cargarán cuando la tabla dispare onTablePagination
   }
 
-  loadCompanies(): void {
-    if (this.companiesSubscription) {
-      this.companiesSubscription.unsubscribe();
-    }
+  ngOnInit(): void {
+    // Cargar opciones de forma paralela y optimizada
+    this.loadOptions();
+  }
 
-    this.companiesSubscription = this.companyService.getList()
+  private loadOptions(): void {
+    // Cargar opciones en paralelo para mejor rendimiento
+    forkJoin({
+      companies: this.companyService.getList().pipe(
+        catchError(() => of([] as Company[]))
+      ),
+      tiposVehiculo: this.tipoVehiculoService.getAll().pipe(
+        catchError(() => of([] as TipoVehiculo[]))
+      )
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          // Cargar datos iniciales después de que las opciones estén listas
+          this.loadBillingPrices();
+        })
+      )
       .subscribe({
-        next: (data: Company[]) => {
-          this.companyOptions = (Array.isArray(data) ? data : []).map(company => ({
-            label: company.companyName || '',
-            value: company.companyId
+        next: ({ companies, tiposVehiculo }) => {
+          // Procesar companies
+          this.companyOptions.set(
+            (Array.isArray(companies) ? companies : []).map(company => ({
+              label: company.companyName || '',
+              value: company.companyId
+            }))
+          );
+
+          // Procesar tiposVehiculo y crear mapa para búsqueda rápida
+          const options = tiposVehiculo.map(tipo => ({
+            label: tipo.description,
+            value: tipo.id
           }));
-        },
-        error: (err: any) => {
-          this.companyOptions = [];
+          this.tipoVehiculoOptions.set(options);
+          
+          // Crear mapa para búsqueda O(1) en lugar de O(n)
+          this.tipoVehiculoMap.clear();
+          tiposVehiculo.forEach(tipo => {
+            this.tipoVehiculoMap.set(tipo.id, tipo.description);
+          });
         }
       });
   }
 
-  loadTiposVehiculo(): void {
-    if (this.tipoVehiculoSubscription) {
-      this.tipoVehiculoSubscription.unsubscribe();
-    }
-    this.tipoVehiculoSubscription = this.tipoVehiculoService.getAll().subscribe({
-      next: (tipos: TipoVehiculo[]) => {
-        this.tipoVehiculoOptions = tipos.map(tipo => ({
-          label: tipo.description,
-          value: tipo.id
-        }));
-      },
-      error: (err: any) => {
-        console.error('Error al cargar tipos de vehículo:', err);
-        this.tipoVehiculoOptions = [];
-      }
-    });
-  }
-
   loadBillingPrices(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-
-    this.loading = true;
-    this.error = null;
+    this.loading.set(true);
+    this.error.set(null);
     
     const filters = {
       status: this.searchForm.value.status?.trim() || undefined,
-      coverType: this.searchForm.value.coverType?.trim() || undefined,
+      tipoVehiculo: this.searchForm.value.tipoVehiculo || undefined,
       companyCompanyId: this.searchForm.value.companyCompanyId || undefined
     };
     
-    this.subscription = this.billingPriceService.getPageable(this.page, this.size, filters)
+    this.billingPriceService.getPageable(this.page(), this.size(), filters)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loading.set(false))
+      )
       .subscribe({
         next: (data: BillingPricePageResponse) => {
+          // Formatear tipoVehiculo usando el mapa cacheado para mejor rendimiento
+          const formattedData = data.content.map(item => ({
+            ...item,
+            tipoVehiculoDisplay: this.getTipoVehiculoDescription(item.tipoVehiculo)
+          }));
           this.tableDataSubject.next({
-            data: data.content,
+            data: formattedData,
             totalRecords: data.totalElements,
-            isFirst: this.page === 0
+            isFirst: this.page() === 0
           });
-          this.loading = false;
         },
         error: (err: any) => {
-          this.error = err?.error?.message || 'Error al cargar los precios';
-          this.loading = false;
+          this.error.set(err?.error?.message || 'Error al cargar los precios');
         }
       });
   }
 
   openCreateForm(): void {
-    this.editingBillingPrice = null;
+    // Cerrar cualquier edición previa
+    this.editingBillingPrice.set(null);
+    // Resetear formulario de forma eficiente
     this.form.reset({
       applyDiscount: false,
       tipoVehiculo: null
     });
-    this.showForm = true;
+    this.form.markAsUntouched();
+    this.form.markAsPristine();
+    // Abrir modal inmediatamente
+    this.showForm.set(true);
   }
 
   onTableEdit(event: any): void {
-    this.editingBillingPrice = event;
+    // Establecer datos de edición
+    this.editingBillingPrice.set(event);
+    // Cargar datos en el formulario
     this.form.patchValue({
       billingPriceId: event.billingPriceId,
       status: event.status || '',
@@ -191,7 +213,8 @@ export class BillingPriceComponent implements OnDestroy {
       mount: event.mount || null,
       tipoVehiculo: event.tipoVehiculo || null
     });
-    this.showForm = true;
+    // Abrir modal inmediatamente
+    this.showForm.set(true);
   }
 
   onTableDelete(event: any): void {
@@ -199,9 +222,9 @@ export class BillingPriceComponent implements OnDestroy {
   }
 
   onTablePagination(event: any): void {
-    this.page = event.page || 0;
-    this.size = event.rows || environment.rowsPerPage || 10;
-    this.first = event.first || 0;
+    this.page.set(event.page || 0);
+    this.size.set(event.rows || environment.rowsPerPage || 10);
+    this.first.set(event.first || 0);
     this.loadBillingPrices();
   }
 
@@ -211,12 +234,12 @@ export class BillingPriceComponent implements OnDestroy {
       return;
     }
 
-    this.loading = true;
-    this.error = null;
+    this.loading.set(true);
+    this.error.set(null);
 
     const formValue = this.form.value;
     const billingPrice: BillingPrice = {
-      billingPriceId: this.editingBillingPrice?.billingPriceId,
+      billingPriceId: this.editingBillingPrice()?.billingPriceId,
       status: formValue.status || null,
       coverType: formValue.coverType || null,
       applyDiscount: formValue.applyDiscount || false,
@@ -228,36 +251,45 @@ export class BillingPriceComponent implements OnDestroy {
       tipoVehiculo: formValue.tipoVehiculo || null
     };
 
-    const operation = this.editingBillingPrice
+    const operation = this.editingBillingPrice()
       ? this.billingPriceService.update(billingPrice)
       : this.billingPriceService.create(billingPrice);
 
-    operation.subscribe({
-      next: () => {
-        this.loading = false;
-        this.showForm = false;
-        this.loadBillingPrices();
-      },
-      error: (err: any) => {
-        this.error = err?.error?.message || 'Error al guardar el precio';
-        this.loading = false;
-      }
-    });
+    operation
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe({
+        next: () => {
+          // Cerrar el modal inmediatamente sin esperar
+          this.showForm.set(false);
+          this.editingBillingPrice.set(null);
+          // Resetear formulario
+          this.form.reset({
+            applyDiscount: false,
+            tipoVehiculo: null
+          });
+          this.form.markAsUntouched();
+          this.form.markAsPristine();
+          // Recargar datos de forma asíncrona usando requestAnimationFrame para mejor rendimiento
+          requestAnimationFrame(() => {
+            this.loadBillingPrices();
+          });
+        },
+        error: (err: any) => {
+          this.error.set(err?.error?.message || 'Error al guardar el precio');
+        }
+      });
   }
 
   cancelForm(): void {
-    this.showForm = false;
-    this.editingBillingPrice = null;
-    // Resetear el formulario de forma más eficiente
-    this.form.patchValue({
-      status: '',
-      coverType: '',
+    // Cerrar el modal inmediatamente
+    this.showForm.set(false);
+    this.editingBillingPrice.set(null);
+    // Resetear formulario de forma eficiente
+    this.form.reset({
       applyDiscount: false,
-      discountDiscountId: null,
-      companyCompanyId: null,
-      start: null,
-      end: null,
-      mount: null,
       tipoVehiculo: null
     });
     this.form.markAsUntouched();
@@ -265,9 +297,9 @@ export class BillingPriceComponent implements OnDestroy {
   }
 
   search(): void {
-    this.page = 0;
-    this.first = 0;
-    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
+    this.page.set(0);
+    this.first.set(0);
+    this.onTablePagination({ page: 0, first: 0, rows: this.size(), pageCount: 0 });
   }
 
   clearSearch(): void {
@@ -275,17 +307,10 @@ export class BillingPriceComponent implements OnDestroy {
     this.search();
   }
 
-
-  ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-    if (this.companiesSubscription) {
-      this.companiesSubscription.unsubscribe();
-    }
-    if (this.tipoVehiculoSubscription) {
-      this.tipoVehiculoSubscription.unsubscribe();
-    }
+  getTipoVehiculoDescription(tipoVehiculoId: string | null | undefined): string {
+    if (!tipoVehiculoId) return '-';
+    // Usar mapa cacheado para búsqueda O(1) en lugar de O(n)
+    return this.tipoVehiculoMap.get(tipoVehiculoId) || tipoVehiculoId;
   }
 }
 

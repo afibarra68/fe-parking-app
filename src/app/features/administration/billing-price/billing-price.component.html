@@ -5,11 +5,11 @@
       label="Nuevo Precio" 
       icon="pi pi-plus" 
       (onClick)="openCreateForm()" 
-      [disabled]="loading">
+      [disabled]="loading()">
     </p-button>
   </div>
 
-  @if (!showForm) {
+  @if (!showForm()) {
   <div class="search-bar" [formGroup]="searchForm">
     <span class="p-input-icon-left">
       <i class="pi pi-search"></i>
@@ -21,21 +21,22 @@
         (keyup.enter)="search()"
       />
     </span>
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="coverType"
-        placeholder="Buscar por tipo de cobertura..."
-        (keyup.enter)="search()"
-      />
-    </span>
+    <app-select-lib
+      formControlName="tipoVehiculo"
+      [options]="tipoVehiculoOptions()"
+      label="Tipo de Vehículo"
+      [filter]="false"
+      [showClear]="true"
+      [floatLabel]="false"
+      [appendTo]="'body'">
+    </app-select-lib>
     <app-select-lib
       formControlName="companyCompanyId"
-      [options]="companyOptions"
+      [options]="companyOptions()"
       label="Empresa"
       [filter]="false"
+      [showClear]="true"
+      [floatLabel]="false"
       [appendTo]="'body'">
     </app-select-lib>
     <div class="search-actions">
@@ -43,32 +44,33 @@
         label="Buscar" 
         icon="pi pi-search" 
         (onClick)="search()" 
-        [disabled]="loading"
+        [disabled]="loading()"
         styleClass="p-button-secondary">
       </p-button>
       <p-button 
         label="Limpiar" 
         icon="pi pi-times" 
         (onClick)="clearSearch()" 
-        [disabled]="loading"
+        [disabled]="loading()"
         styleClass="p-button-text">
       </p-button>
     </div>
   </div>
   }
 
-  @if (error) {
+  @if (error()) {
   <p-message 
     severity="error" 
-    [text]="error"
+    [text]="error() || ''"
     [closable]="true"
-    (onClose)="error = null">
+    (onClose)="error.set(null)">
   </p-message>
   }
 
   <p-dialog 
-    [(visible)]="showForm" 
-    [header]="editingBillingPrice ? 'Editar Precio' : 'Nuevo Precio'"
+    [visible]="showForm()"
+    (visibleChange)="showForm.set($event)" 
+    [header]="editingBillingPrice() ? 'Editar Precio' : 'Nuevo Precio'"
     [modal]="true"
     [style]="{width: '700px'}"
     [closable]="true"
@@ -93,7 +95,7 @@
         <div class="form-group">
           <app-select-lib
             formControlName="tipoVehiculo"
-            [options]="tipoVehiculoOptions"
+            [options]="tipoVehiculoOptions()"
             label="Tipo de Vehículo"
             [filter]="false"
             [showClear]="true"
@@ -122,14 +124,13 @@
             id="start"
             formControlName="start"
             [min]="1"
-            [max]="5"
             [showButtons]="true"
             [useGrouping]="false"
-            placeholder="1-5 horas">
+            placeholder="Horas de inicio">
           </p-inputNumber>
           @if (form.get('start')?.invalid && form.get('start')?.touched) {
           <small class="p-error">
-            El rango debe estar entre 1 y 5 horas
+            El inicio debe ser mayor o igual a 1
           </small>
           }
         </div>
@@ -140,14 +141,13 @@
             id="end"
             formControlName="end"
             [min]="1"
-            [max]="5"
             [showButtons]="true"
             [useGrouping]="false"
-            placeholder="1-5 horas">
+            placeholder="Horas de fin">
           </p-inputNumber>
           @if (form.get('end')?.invalid && form.get('end')?.touched) {
           <small class="p-error">
-            El rango debe estar entre 1 y 5 horas
+            El fin debe ser mayor o igual a 1
           </small>
           }
         </div>
@@ -157,7 +157,7 @@
         <div class="form-group">
           <app-select-lib
             formControlName="companyCompanyId"
-            [options]="companyOptions"
+            [options]="companyOptions()"
             label="Empresa"
             [filter]="false"
             [showClear]="true"
@@ -209,27 +209,27 @@
       <div class="form-actions">
         <p-button 
           type="submit"
-          [label]="loading ? 'Guardando...' : (editingBillingPrice ? 'Actualizar' : 'Crear')"
+          [label]="loading() ? 'Guardando...' : (editingBillingPrice() ? 'Actualizar' : 'Crear')"
           icon="pi pi-check"
-          [disabled]="form.invalid || loading"
-          [loading]="loading">
+          [disabled]="form.invalid || loading()"
+          [loading]="loading()">
         </p-button>
         <p-button 
           type="button"
           label="Cancelar" 
           icon="pi pi-times"
           (onClick)="cancelForm()" 
-          [disabled]="loading"
+          [disabled]="loading()"
           styleClass="p-button-secondary">
         </p-button>
       </div>
     </form>
   </p-dialog>
 
-  @if (!showForm) {
+  @if (!showForm()) {
   <div class="table-container">
     <app-spinner 
-      [loading]="loading"
+      [loading]="loading()"
       size="normal"
       message="Cargando precios..."
       [overlay]="true">

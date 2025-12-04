@@ -45,7 +45,7 @@ export class ClosedTransactionsService {
   getPageable(
     page: number, 
     size: number, 
-    filters?: { status?: string; companyCompanyId?: number }
+    filters?: { status?: string; companyCompanyId?: number; operationDateFrom?: string; operationDateTo?: string }
   ): Observable<Page<ClosedTransaction>> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -57,6 +57,14 @@ export class ClosedTransactionsService {
     
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
+    }
+    
+    if (filters?.operationDateFrom) {
+      params = params.set('operationDateFrom', filters.operationDateFrom);
+    }
+    
+    if (filters?.operationDateTo) {
+      params = params.set('operationDateTo', filters.operationDateTo);
     }
     
     return this.http.get<Page<ClosedTransaction>>(`${this.apiUrl}/closed-transactions`, { params });

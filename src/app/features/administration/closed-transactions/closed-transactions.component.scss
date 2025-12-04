@@ -39,6 +39,23 @@
           width: 100%;
         }
       }
+
+      .checkbox-field {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: flex-start;
+        padding-top: 1.5rem; // Alinear con los otros campos
+
+        .checkbox-label {
+          margin: 0;
+          font-weight: 500;
+          color: var(--text-color);
+          font-size: 0.875rem;
+          cursor: pointer;
+        }
+      }
     }
 
     .search-actions {

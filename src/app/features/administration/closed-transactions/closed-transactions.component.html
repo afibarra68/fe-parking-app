@@ -12,7 +12,7 @@
           type="text" 
           pInputText 
           formControlName="status"
-          placeholder="Ej: CLOSED"
+          placeholder="Ej: CLOSED (Cobrada)"
         />
       </div>
       <div class="search-field">
@@ -24,6 +24,14 @@
           formControlName="companyCompanyId"
           placeholder="ID de empresa"
         />
+      </div>
+      <div class="search-field checkbox-field">
+        <p-checkbox
+          formControlName="todayOnly"
+          inputId="todayOnly"
+          [binary]="true">
+        </p-checkbox>
+        <label for="todayOnly" class="checkbox-label">Transacciones del día de hoy</label>
       </div>
     </div>
     <div class="search-actions">

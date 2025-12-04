@@ -33,7 +33,7 @@ export class BillingPriceService {
   private apiUrl = environment.apiAuthJwt;
 
   // Listar con paginación
-  getPageable(page: number, size: number, filters?: { status?: string; companyCompanyId?: number; coverType?: string }): Observable<BillingPricePageResponse> {
+  getPageable(page: number, size: number, filters?: { status?: string; companyCompanyId?: number; tipoVehiculo?: string }): Observable<BillingPricePageResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -44,15 +44,15 @@ export class BillingPriceService {
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
     }
-    if (filters?.coverType) {
-      params = params.set('coverType', filters.coverType);
+    if (filters?.tipoVehiculo) {
+      params = params.set('tipoVehiculo', filters.tipoVehiculo);
     }
     
     return this.http.get<BillingPricePageResponse>(`${this.apiUrl}/billing-prices/pageable`, { params });
   }
 
   // Listar queryable (sin paginación, para dropdowns)
-  getList(filters?: { status?: string; companyCompanyId?: number; coverType?: string }): Observable<BillingPrice[]> {
+  getList(filters?: { status?: string; companyCompanyId?: number; tipoVehiculo?: string }): Observable<BillingPrice[]> {
     let params = new HttpParams();
     if (filters?.status) {
       params = params.set('status', filters.status);
@@ -60,8 +60,8 @@ export class BillingPriceService {
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
     }
-    if (filters?.coverType) {
-      params = params.set('coverType', filters.coverType);
+    if (filters?.tipoVehiculo) {
+      params = params.set('tipoVehiculo', filters.tipoVehiculo);
     }
     return this.http.get<BillingPrice[]>(`${this.apiUrl}/billing-prices`, { params });
   }
