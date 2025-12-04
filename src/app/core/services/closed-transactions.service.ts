@@ -32,6 +32,7 @@ export interface ClosedTransaction {
   sellerAppUserId?: number | null;
   sellerName?: string | null;
   contractor?: number | null;
+  countryCurrency?: string;
 }
 
 @Injectable({

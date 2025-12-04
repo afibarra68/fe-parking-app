@@ -27,7 +27,7 @@ export class BusinessServiceService {
   private apiUrl = environment.apiAuthJwt;
 
   // Listar con paginación
-  getPageable(page: number, size: number, filters?: { principalName?: string; code?: string }): Observable<BusinessServicePageResponse> {
+  getPageable(page: number, size: number, filters?: { principalName?: string; code?: string; description?: string }): Observable<BusinessServicePageResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -37,6 +37,9 @@ export class BusinessServiceService {
     }
     if (filters?.code) {
       params = params.set('code', filters.code);
+    }
+    if (filters?.description) {
+      params = params.set('description', filters.description);
     }
     
     return this.http.get<BusinessServicePageResponse>(`${this.apiUrl}/business-services/pageable`, { params });

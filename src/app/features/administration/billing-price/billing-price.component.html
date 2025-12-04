@@ -1,8 +1,8 @@
 <div class="billing-price-container">
   <div class="header">
-    <h1>Precios de Facturación</h1>
+    <h1>Tarifas</h1>
     <p-button 
-      label="Nuevo Precio" 
+      label="Nueva Tarifa" 
       icon="pi pi-plus" 
       (onClick)="openCreateForm()" 
       [disabled]="loading()">
@@ -11,16 +11,13 @@
 
   @if (!showForm()) {
   <div class="search-bar" [formGroup]="searchForm">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="status"
-        placeholder="Buscar por estado..."
-        (keyup.enter)="search()"
-      />
-    </span>
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="status"
+      placeholder="Buscar por estado..."
+      (keyup.enter)="search()"
+    />
     <app-select-lib
       formControlName="tipoVehiculo"
       [options]="tipoVehiculoOptions()"
@@ -70,7 +67,7 @@
   <p-dialog 
     [visible]="showForm()"
     (visibleChange)="showForm.set($event)" 
-    [header]="editingBillingPrice() ? 'Editar Precio' : 'Nuevo Precio'"
+    [header]="editingBillingPrice() ? 'Editar Tarifa' : 'Nueva Tarifa'"
     [modal]="true"
     [style]="{width: '700px'}"
     [closable]="true"
@@ -164,7 +161,8 @@
             [floatLabel]="false"
             [virtualScroll]="false"
             [scrollHeight]="'300px'"
-            [appendTo]="'body'">
+            [appendTo]="'body'"
+            (onChange)="onCompanyChange($event)">
           </app-select-lib>
         </div>
 
@@ -178,6 +176,20 @@
             placeholder="ID del descuento">
           </p-inputNumber>
         </div>
+      </div>
+
+      <div class="form-group">
+        <app-select-lib
+          formControlName="businessServiceBusinessServiceId"
+          [options]="businessServiceOptions()"
+          label="Servicio de Negocio"
+          [filter]="true"
+          [showClear]="true"
+          [floatLabel]="false"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
       </div>
 
       <div class="form-group">
@@ -231,7 +243,7 @@
     <app-spinner 
       [loading]="loading()"
       size="normal"
-      message="Cargando precios..."
+      message="Cargando tarifas..."
       [overlay]="true">
     </app-spinner>
     

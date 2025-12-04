@@ -10,16 +10,13 @@
   </div>
 
   <div class="search-bar" *ngIf="!showForm" [formGroup]="searchForm">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="document"
-        placeholder="Buscar por número de identidad..."
-        (keyup.enter)="search()"
-      />
-    </span>
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="document"
+      placeholder="Buscar por número de identidad..."
+      (keyup.enter)="search()"
+    />
     <div class="search-actions">
       <p-button 
         label="Buscar" 

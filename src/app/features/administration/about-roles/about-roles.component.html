@@ -1,0 +1,25 @@
+<div class="about-roles-container">
+  <div class="about-roles-header">
+    <h1>Roles del Sistema</h1>
+    <p class="subtitle">Información sobre los roles disponibles en el sistema</p>
+  </div>
+
+  <div class="roles-content">
+    <div class="roles-grid">
+      @for (role of roles; track role.name) {
+        <p-card class="role-card">
+          <div class="role-header" [style.border-left-color]="role.color">
+            <div class="role-icon" [style.color]="role.color">
+              <i [class]="role.icon"></i>
+            </div>
+            <h3 class="role-name">{{ role.name }}</h3>
+          </div>
+          <div class="role-body">
+            <p class="role-description">{{ role.description }}</p>
+          </div>
+        </p-card>
+      }
+    </div>
+  </div>
+</div>
+

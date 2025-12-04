@@ -10,26 +10,27 @@
   </div>
 
   <form [formGroup]="searchForm" class="search-bar" *ngIf="!showForm">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="principalName"
-        placeholder="Buscar por nombre principal..."
-        (keyup.enter)="search()"
-      />
-    </span>
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="code"
-        placeholder="Buscar por código..."
-        (keyup.enter)="search()"
-      />
-    </span>
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="principalName"
+      placeholder="Buscar por nombre principal..."
+      (keyup.enter)="search()"
+    />
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="code"
+      placeholder="Buscar por código..."
+      (keyup.enter)="search()"
+    />
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="description"
+      placeholder="Buscar por descripción..."
+      (keyup.enter)="search()"
+    />
     <div class="search-actions">
       <p-button 
         label="Buscar" 

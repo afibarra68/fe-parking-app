@@ -11,26 +11,20 @@
 
   @if (!showForm) {
   <div class="search-bar" [formGroup]="searchForm">
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="companyName"
-        placeholder="Buscar por nombre de empresa..."
-        (keyup.enter)="search()"
-      />
-    </span>
-    <span class="p-input-icon-left">
-      <i class="pi pi-search"></i>
-      <input 
-        type="text" 
-        pInputText 
-        formControlName="numberIdentity"
-        placeholder="Buscar por número de identidad..."
-        (keyup.enter)="search()"
-      />
-    </span>
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="companyName"
+      placeholder="Buscar por nombre de empresa..."
+      (keyup.enter)="search()"
+    />
+    <input 
+      type="text" 
+      pInputText 
+      formControlName="numberIdentity"
+      placeholder="Buscar por número de identidad..."
+      (keyup.enter)="search()"
+    />
     <div class="search-actions">
       <p-button 
         label="Buscar" 
@@ -99,11 +93,11 @@
       <app-select-lib
         formControlName="countryId"
         [options]="countryOptions"
-        label="Pais de origen"
-        [filter]="false"
-        [virtualScroll]="true"
-        [appendTo]="'body'"
-        (onLazyLoad)="onCountryLazyLoad($event)">
+        label="País de origen"
+        [filter]="true"
+        [virtualScroll]="false"
+        [scrollHeight]="'200px'"
+        [appendTo]="'body'">
       </app-select-lib>
 
       <div class="form-actions">

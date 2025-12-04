@@ -27,41 +27,47 @@
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
-  color: #495057;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s;
   gap: 0.75rem;
   position: relative;
   cursor: pointer;
 
   &:hover {
-    background-color: #f8f9fa;
-    color: #007bff;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    transform: translateX(4px);
   }
 
   &.active {
-    background-color: #007bff;
-    color: white;
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
     .menu-icon {
-      color: white;
+      color: #e3f2fd;
     }
   }
 
   &.menu-parent {
     cursor: default;
     font-weight: 600;
-    color: #495057;
+    color: rgba(255, 255, 255, 0.95);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
   }
 }
 
 .menu-icon {
   font-size: 1.1rem;
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.8);
   width: 1.25rem;
   text-align: center;
   flex-shrink: 0;
+  transition: color 0.2s;
 }
 
 .menu-label {
@@ -73,19 +79,20 @@
 }
 
 .menu-badge {
-  background-color: #dc3545;
+  background-color: #ff6b6b;
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .submenu {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0 0 1.5rem;
-  border-left: 2px solid #e9ecef;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
   padding-left: 1rem;
 }
 
@@ -97,7 +104,7 @@
   display: flex;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  color: #6c757d;
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
   border-radius: 4px;
   transition: all 0.2s;
@@ -105,13 +112,14 @@
   font-size: 0.9rem;
 
   &:hover {
-    background-color: #f8f9fa;
-    color: #007bff;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    transform: translateX(4px);
   }
 
   &.active {
-    background-color: #e7f3ff;
-    color: #007bff;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     font-weight: 500;
   }
 }

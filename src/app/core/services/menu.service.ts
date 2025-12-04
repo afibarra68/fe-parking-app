@@ -43,6 +43,12 @@ export class MenuService {
       visible: true
     },
     {
+      label: 'Tarifas',
+      icon: 'pi pi-dollar',
+      routerLink: '/administration/billing-prices',
+      visible: true
+    },
+    {
       label: 'Vehículos Parqueados',
       icon: 'pi pi-car',
       routerLink: '/administration/vehiculos-parqueados',
@@ -52,12 +58,6 @@ export class MenuService {
       label: 'Transacciones Cerradas',
       icon: 'pi pi-check-circle',
       routerLink: '/administration/closed-transactions',
-      visible: true
-    },
-    {
-      label: 'Precios de Facturación',
-      icon: 'pi pi-dollar',
-      routerLink: '/administration/billing-prices',
       visible: true
     },
     {
@@ -75,6 +75,12 @@ export class MenuService {
           label: 'Relaciones Usuario-Rol',
           icon: 'pi pi-link',
           routerLink: '/administration/user-roles',
+          visible: true
+        },
+        {
+          label: 'About Roles',
+          icon: 'pi pi-info-circle',
+          routerLink: '/administration/about-roles',
           visible: true
         }
       ]

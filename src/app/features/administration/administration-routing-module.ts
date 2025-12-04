@@ -12,6 +12,7 @@ import { BillingPriceComponent } from './billing-price/billing-price.component';
 import { UsersComponent } from './users/users.component';
 import { UserRolesComponent } from './user-roles/user-roles.component';
 import { AboutComponent } from './about/about.component';
+import { AboutRolesComponent } from './about-roles/about-roles.component';
 
 const routes: Routes = [
   {
@@ -61,6 +62,10 @@ const routes: Routes = [
   {
     path: 'about',
     component: AboutComponent
+  },
+  {
+    path: 'about-roles',
+    component: AboutRolesComponent
   },
   {
     path: '',

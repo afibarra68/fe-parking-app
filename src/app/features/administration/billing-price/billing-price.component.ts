@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../../../core/services/billing-price.service';
 import { CompanyService, Company } from '../../../core/services/company.service';
 import { TipoVehiculoService, TipoVehiculo } from '../../../core/services/tipo-vehiculo.service';
+import { CompanyBusinessServiceService, CompanyBusinessService } from '../../../core/services/company-business-service.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -45,6 +46,8 @@ export class BillingPriceComponent implements OnInit {
   error = signal<string | null>(null);
   companyOptions = signal<SelectItem[]>([]);
   tipoVehiculoOptions = signal<SelectItem[]>([]);
+  businessServiceOptions = signal<SelectItem[]>([]);
+  currentCompanyId = signal<number | null>(null);
   
   // Cache para mapeo rápido de tipoVehiculo
   private tipoVehiculoMap = new Map<string, string>();
@@ -80,6 +83,7 @@ export class BillingPriceComponent implements OnInit {
     private billingPriceService: BillingPriceService,
     private companyService: CompanyService,
     private tipoVehiculoService: TipoVehiculoService,
+    private companyBusinessServiceService: CompanyBusinessServiceService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -88,6 +92,7 @@ export class BillingPriceComponent implements OnInit {
       applyDiscount: [false],
       discountDiscountId: [null],
       companyCompanyId: [null],
+      businessServiceBusinessServiceId: [null],
       start: [null, [Validators.min(1)]],
       end: [null, [Validators.min(1)]],
       mount: [null, [Validators.min(0)]],
@@ -102,8 +107,48 @@ export class BillingPriceComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Cargar opciones de forma paralela y optimizada
-    this.loadOptions();
+    // Cargar empresa del usuario logueado y luego las opciones
+    this.loadCurrentUserCompany();
+  }
+
+  private loadCurrentUserCompany(): void {
+    this.companyService.getCurrentUserCompany()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => of(null as Company | null))
+      )
+      .subscribe({
+        next: (company) => {
+          if (company?.companyId) {
+            this.currentCompanyId.set(company.companyId);
+            // Cargar servicios de negocio de la empresa
+            this.loadBusinessServicesByCompany(company.companyId);
+          }
+          // Cargar opciones de forma paralela y optimizada
+          this.loadOptions();
+        }
+      });
+  }
+
+  private loadBusinessServicesByCompany(companyId: number): void {
+    this.companyBusinessServiceService.getByCompanyId(companyId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => of([] as CompanyBusinessService[]))
+      )
+      .subscribe({
+        next: (companyBusinessServices) => {
+          const options = (Array.isArray(companyBusinessServices) ? companyBusinessServices : [])
+            .map(cbs => ({
+              label: cbs.businessService 
+                ? `${cbs.businessService.principalName} (${cbs.businessService.code})`
+                : 'Sin nombre',
+              value: cbs.businessService?.businessServiceId
+            }))
+            .filter(opt => opt.value != null);
+          this.businessServiceOptions.set(options);
+        }
+      });
   }
 
   private loadOptions(): void {
@@ -178,7 +223,7 @@ export class BillingPriceComponent implements OnInit {
           });
         },
         error: (err: any) => {
-          this.error.set(err?.error?.message || 'Error al cargar los precios');
+          this.error.set(err?.error?.message || 'Error al cargar las tarifas');
         }
       });
   }
@@ -189,7 +234,9 @@ export class BillingPriceComponent implements OnInit {
     // Resetear formulario de forma eficiente
     this.form.reset({
       applyDiscount: false,
-      tipoVehiculo: null
+      tipoVehiculo: null,
+      companyCompanyId: this.currentCompanyId(),
+      businessServiceBusinessServiceId: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
@@ -208,11 +255,17 @@ export class BillingPriceComponent implements OnInit {
       applyDiscount: event.applyDiscount || false,
       discountDiscountId: event.discountDiscountId || null,
       companyCompanyId: event.companyCompanyId || null,
+      businessServiceBusinessServiceId: event.businessServiceBusinessServiceId || null,
       start: event.start || null,
       end: event.end || null,
       mount: event.mount || null,
       tipoVehiculo: event.tipoVehiculo || null
     });
+    
+    // Si hay companyCompanyId, cargar servicios de negocio de esa empresa
+    if (event.companyCompanyId) {
+      this.loadBusinessServicesByCompany(event.companyCompanyId);
+    }
     // Abrir modal inmediatamente
     this.showForm.set(true);
   }
@@ -245,6 +298,7 @@ export class BillingPriceComponent implements OnInit {
       applyDiscount: formValue.applyDiscount || false,
       discountDiscountId: formValue.discountDiscountId || null,
       companyCompanyId: formValue.companyCompanyId || null,
+      businessServiceBusinessServiceId: formValue.businessServiceBusinessServiceId || null,
       start: formValue.start || null,
       end: formValue.end || null,
       mount: formValue.mount || null,
@@ -268,7 +322,9 @@ export class BillingPriceComponent implements OnInit {
           // Resetear formulario
           this.form.reset({
             applyDiscount: false,
-            tipoVehiculo: null
+            tipoVehiculo: null,
+            companyCompanyId: this.currentCompanyId(),
+            businessServiceBusinessServiceId: null
           });
           this.form.markAsUntouched();
           this.form.markAsPristine();
@@ -290,7 +346,9 @@ export class BillingPriceComponent implements OnInit {
     // Resetear formulario de forma eficiente
     this.form.reset({
       applyDiscount: false,
-      tipoVehiculo: null
+      tipoVehiculo: null,
+      companyCompanyId: this.currentCompanyId(),
+      businessServiceBusinessServiceId: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
@@ -311,6 +369,17 @@ export class BillingPriceComponent implements OnInit {
     if (!tipoVehiculoId) return '-';
     // Usar mapa cacheado para búsqueda O(1) en lugar de O(n)
     return this.tipoVehiculoMap.get(tipoVehiculoId) || tipoVehiculoId;
+  }
+
+  onCompanyChange(event: any): void {
+    const companyId = event?.value;
+    if (companyId) {
+      this.loadBusinessServicesByCompany(companyId);
+      // Limpiar el servicio de negocio seleccionado cuando cambia la empresa
+      this.form.patchValue({ businessServiceBusinessServiceId: null });
+    } else {
+      this.businessServiceOptions.set([]);
+    }
   }
 }
 

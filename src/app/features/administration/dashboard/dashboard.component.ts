@@ -44,10 +44,12 @@ export class DashboardComponent implements OnInit {
     const excludedModules = [
       '/administration/users',
       '/administration/user-roles',
+      '/administration/about-roles',
       '/administration/countries',
       '/administration/companies',
       'Gestión de Usuarios',
       'Relaciones Usuario-Rol',
+      'About Roles',
       'Países',
       'Empresas'
     ];
@@ -97,7 +99,7 @@ export class DashboardComponent implements OnInit {
       'Empresa - Servicios': 'Gestiona la relación entre empresas y servicios',
       'Vehículos Parqueados': 'Consulta los vehículos actualmente en el estacionamiento',
       'Transacciones Cerradas': 'Visualiza las transacciones completadas',
-      'Precios de Facturación': 'Configura los precios de facturación por rangos de horas',
+      'Tarifas': 'Configura las tarifas por rangos de horas',
       'Gestión de Usuarios': 'Administra los usuarios del sistema',
       'Relaciones Usuario-Rol': 'Gestiona los roles asignados a los usuarios'
     };

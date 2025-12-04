@@ -69,7 +69,8 @@ export class BusinessServiceComponent implements OnDestroy {
 
     this.searchForm = this.fb.group({
       principalName: [''],
-      code: ['']
+      code: [''],
+      description: ['']
     });
   }
 
@@ -83,7 +84,8 @@ export class BusinessServiceComponent implements OnDestroy {
     
     const filters = {
       principalName: this.searchForm.value.principalName?.trim() || undefined,
-      code: this.searchForm.value.code?.trim() || undefined
+      code: this.searchForm.value.code?.trim() || undefined,
+      description: this.searchForm.value.description?.trim() || undefined
     };
     
     this.subscription = this.businessServiceService.getPageable(this.page, this.size, filters)

@@ -11,6 +11,7 @@ export interface BillingPrice {
   applyDiscount?: boolean;
   discountDiscountId?: number;
   companyCompanyId?: number;
+  businessServiceBusinessServiceId?: number;
   start?: number;
   end?: number;
   mount?: number;

@@ -42,8 +42,6 @@ export class CompaniesComponent implements OnDestroy {
   
   private subscription?: Subscription;
   private countriesSubscription?: Subscription;
-  private countryFilterTimeout?: any;
-  private lastCountryFilter: string = '';
   
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
@@ -83,51 +81,23 @@ export class CompaniesComponent implements OnDestroy {
     this.loadCountries();
   }
 
-  loadCountries(filter?: string): void {
+  loadCountries(): void {
     if (this.countriesSubscription) {
       this.countriesSubscription.unsubscribe();
     }
 
-    // Si hay filtro, cargar con filtro, sino cargar todos
-    this.countriesSubscription = this.countryService.getQueryable(filter ? { name: filter } : undefined)
+    this.countriesSubscription = this.countryService.getQueryable()
       .subscribe({
         next: (data: Country[]) => {
           this.countryOptions = (Array.isArray(data) ? data : []).map(country => ({
             label: country.name || '',
             value: country.countryId
           }));
-          this.lastCountryFilter = filter || '';
         },
         error: (err: any) => {
           this.countryOptions = [];
-          this.lastCountryFilter = '';
         }
       });
-  }
-
-  onCountryLazyLoad(event: any): void {
-    // Ignorar eventos de scroll, solo procesar cambios de filtro
-    const filter = event?.filter || '';
-    
-    // Si el filtro no cambió, es solo scroll - no hacer nada
-    // Esto evita errores cuando se llega al final del scroll
-    if (filter === this.lastCountryFilter) {
-      return;
-    }
-    
-    // Si no hay filtro y ya cargamos la lista completa, no hacer nada
-    if (!filter && this.lastCountryFilter === '' && this.countryOptions.length > 0) {
-      return;
-    }
-    
-    // Si el filtro cambió, actualizar con debounce
-    if (this.countryFilterTimeout) {
-      clearTimeout(this.countryFilterTimeout);
-    }
-    
-    this.countryFilterTimeout = setTimeout(() => {
-      this.loadCountries(filter);
-    }, 300);
   }
 
   loadCompanies(): void {
@@ -171,9 +141,6 @@ export class CompaniesComponent implements OnDestroy {
     }
     if (this.countriesSubscription) {
       this.countriesSubscription.unsubscribe();
-    }
-    if (this.countryFilterTimeout) {
-      clearTimeout(this.countryFilterTimeout);
     }
     this.tableDataSubject.complete();
   }

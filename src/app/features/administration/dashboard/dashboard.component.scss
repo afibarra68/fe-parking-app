@@ -72,13 +72,14 @@
 }
 
 .module-header {
-  background: linear-gradient(135deg, var(--primary-color, #007bff) 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #1a3a5f 0%, #2c5282 100%);
   padding: 2rem;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 90px;
+  box-shadow: 0 2px 8px rgba(26, 58, 95, 0.3);
 }
 
 .module-icon {

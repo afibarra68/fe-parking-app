@@ -55,7 +55,7 @@ export class ClosedTransactionsComponent implements OnDestroy {
     { field: 'endTime', header: 'Fecha Fin', width: '120px' },
     { field: 'endDate', header: 'Hora Fin', width: '120px' },
     { field: 'statusDisplay', header: 'Estado', width: '120px' },
-    { field: 'totalAmount', header: 'Total', width: '120px' },
+    { field: 'totalAmountFormatted', header: 'Total', width: '150px' },
     { field: 'timeElapsed', header: 'Tiempo Transcurrido', width: '150px' },
     { field: 'sellerName', header: 'Vendedor', width: '150px' },
     { field: 'operationDate', header: 'Fecha Operación', width: '150px' }
@@ -121,10 +121,11 @@ export class ClosedTransactionsComponent implements OnDestroy {
       .getPageable(this.page, this.size, filters)
       .subscribe({
         next: (response: Page<ClosedTransaction>) => {
-          // Formatear status para mostrar en la tabla
+          // Formatear status y totalAmount para mostrar en la tabla
           const formattedData = (response.content || []).map(item => ({
             ...item,
-            statusDisplay: this.formatStatus(item.status)
+            statusDisplay: this.formatStatus(item.status),
+            totalAmountFormatted: this.formatCurrency(item.totalAmount, item.countryCurrency)
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -189,6 +190,84 @@ export class ClosedTransactionsComponent implements OnDestroy {
       default:
         return status;
     }
+  }
+
+  /**
+   * Formatea el totalAmount como moneda usando el código de moneda del país.
+   * La simbología se maneja completamente en el frontend usando Intl.NumberFormat.
+   */
+  formatCurrency(amount: number | undefined, currencyCode: string | undefined): string {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '-';
+    }
+
+    // Obtener el locale del navegador o usar español por defecto
+    const locale = navigator.language || 'es-ES';
+    
+    // Si no hay código de moneda, usar formato por defecto con USD
+    if (!currencyCode || currencyCode.trim() === '') {
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    // Normalizar el código de moneda (mayúsculas, sin espacios)
+    const normalizedCurrency = currencyCode.trim().toUpperCase();
+
+    try {
+      // Formatear con el código de moneda proporcionado
+      // Intl.NumberFormat maneja automáticamente la simbología según el código
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: normalizedCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    } catch (error) {
+      // Si el código de moneda no es válido para Intl, usar formato simple
+      // El frontend maneja la simbología manualmente
+      return this.formatCurrencyFallback(amount, normalizedCurrency);
+    }
+  }
+
+  /**
+   * Formatea moneda cuando el código no es reconocido por Intl.NumberFormat
+   * Maneja la simbología manualmente en el frontend
+   */
+  private formatCurrencyFallback(amount: number, currencyCode: string): string {
+    // Mapa de códigos de moneda comunes a sus símbolos
+    const currencySymbols: { [key: string]: string } = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CNY': '¥',
+      'COP': '$',
+      'MXN': '$',
+      'ARS': '$',
+      'BRL': 'R$',
+      'CLP': '$',
+      'PEN': 'S/',
+      'UYU': '$U',
+      'VES': 'Bs.',
+      'DOP': 'RD$',
+      'GTQ': 'Q',
+      'HNL': 'L',
+      'NIO': 'C$',
+      'PAB': 'B/.',
+      'PYG': '₲',
+      'CRC': '₡',
+      'SVC': '₡'
+    };
+
+    const symbol = currencySymbols[currencyCode] || currencyCode;
+    const formattedAmount = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Formato: símbolo + espacio + monto (ej: "$ 1,234.56" o "€ 1,234.56")
+    return `${symbol} ${formattedAmount}`;
   }
 }
 

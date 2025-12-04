@@ -1,0 +1,101 @@
+.about-roles-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .about-roles-header {
+    margin-bottom: 2.5rem;
+    text-align: center;
+
+    h1 {
+      margin: 0 0 0.5rem 0;
+      color: var(--text-color);
+      font-size: 2.5rem;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--text-color-secondary);
+      font-size: 1.1rem;
+    }
+  }
+
+  .roles-content {
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+      padding: 1rem 0;
+
+      .role-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        ::ng-deep .p-card-body {
+          padding: 1.5rem;
+        }
+
+        ::ng-deep .p-card-content {
+          padding: 0;
+        }
+
+        .role-header {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding-bottom: 1rem;
+          margin-bottom: 1rem;
+          border-bottom: 2px solid var(--surface-border);
+          border-left: 4px solid;
+
+          .role-icon {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: var(--surface-ground);
+            border-radius: 8px;
+          }
+
+          .role-name {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+            flex: 1;
+          }
+        }
+
+        .role-body {
+          .role-description {
+            margin: 0;
+            color: var(--text-color-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .about-roles-container {
+    padding: 1rem;
+
+    .roles-content .roles-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+}
+

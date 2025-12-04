@@ -23,7 +23,7 @@ export class AboutComponent implements OnInit, OnDestroy {
     description: 'Sistema integral para la gestión y administración de estacionamientos',
     features: [
       'Gestión de vehículos y transacciones',
-      'Control de precios de facturación',
+      'Control de tarifas',
       'Administración de clientes y empresas',
       'Sistema de roles y permisos',
       'Reportes y transacciones cerradas'
@@ -65,7 +65,7 @@ export class AboutComponent implements OnInit, OnDestroy {
           description: company.numberIdentity || 'Sistema integral para la gestión y administración de estacionamientos',
           features: [
             'Gestión de vehículos y transacciones',
-            'Control de precios de facturación',
+            'Control de tarifas',
             'Administración de clientes y empresas',
             'Sistema de roles y permisos',
             'Reportes y transacciones cerradas'
@@ -96,7 +96,7 @@ export class AboutComponent implements OnInit, OnDestroy {
       description: 'Acceso en modo multiempresa - Gestión centralizada de múltiples empresas',
       features: [
         'Gestión de vehículos y transacciones',
-        'Control de precios de facturación',
+        'Control de tarifas',
         'Administración de clientes y empresas',
         'Sistema de roles y permisos',
         'Reportes y transacciones cerradas',
