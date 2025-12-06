@@ -1,50 +1,21 @@
-# Dockerfile para Angular 20 con SSR en Cloud Run
-# Opción 2: Usar Node.js para Server-Side Rendering
+# Dockerfile básico para Angular 20 con SSR en Cloud Run
+# Usa Node.js para Server-Side Rendering
 
 # Stage 1: Build
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Build arguments para validación de producción
-ARG NODE_ENV=production
-ARG PRODUCTION=false
-ENV NODE_ENV=$NODE_ENV
-ENV PRODUCTION=$PRODUCTION
-
-# Validar que estamos en modo producción
-RUN if [ "$PRODUCTION" != "true" ]; then \
-        echo "ERROR: PRODUCTION debe ser 'true' para construir imagen de producción"; \
-        exit 1; \
-    fi && \
-    echo "✓ Construyendo en modo producción con SSR: NODE_ENV=$NODE_ENV, PRODUCTION=$PRODUCTION"
-
-# Copiar archivos de configuración primero para cachear dependencias
+# Copiar archivos de configuración
 COPY package*.json ./
 
 # Instalar dependencias
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copiar código fuente
 COPY . .
 
-# Compilar la aplicación para producción con SSR
+# Compilar la aplicación para producción
 RUN npm run build -- --configuration production
-
-# Validar que el build generó los archivos necesarios para SSR
-RUN if [ ! -d "/app/dist/t-parking/server" ]; then \
-        echo "ERROR: Directorio dist/t-parking/server no encontrado después del build"; \
-        exit 1; \
-    fi && \
-    if [ ! -d "/app/dist/t-parking/browser" ]; then \
-        echo "ERROR: Directorio dist/t-parking/browser no encontrado después del build"; \
-        exit 1; \
-    fi && \
-    if [ ! -f "/app/dist/t-parking/server/server.mjs" ]; then \
-        echo "ERROR: server.mjs no encontrado en dist/t-parking/server"; \
-        ls -la /app/dist/t-parking/server/; \
-        exit 1; \
-    fi && \
-    echo "✓ Build SSR completado correctamente"
 
 # Stage 2: Runtime con Node.js
 FROM node:20-alpine AS runtime
@@ -54,39 +25,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-# Copiar archivos compilados del servidor
-# Mantener la estructura de directorios para que server.mjs pueda encontrar ../browser
+# Copiar archivos compilados (mantener estructura para que server.mjs encuentre ../browser)
 COPY --from=build /app/dist/t-parking ./dist/t-parking
-
-# Verificar que los archivos se copiaron correctamente
-RUN if [ ! -f "/app/dist/t-parking/server/server.mjs" ]; then \
-        echo "ERROR: server.mjs no encontrado después de copiar"; \
-        ls -la /app/dist/t-parking/server/; \
-        exit 1; \
-    fi && \
-    if [ ! -d "/app/dist/t-parking/browser" ]; then \
-        echo "ERROR: Directorio browser no encontrado"; \
-        exit 1; \
-    fi && \
-    echo "✓ Archivos SSR copiados correctamente" && \
-    echo "Estructura de archivos:" && \
-    ls -la /app/dist/t-parking/server/ | head -10
 
 # Variables de entorno
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Exponer puerto (Cloud Run usa PORT variable)
+# Exponer puerto
 EXPOSE 8080
 
-# Health check básico (opcional, Cloud Run tiene su propio)
-# Nota: Cloud Run tiene su propio health check, este es solo para debugging local
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-#   CMD node -e "require('http').get('http://localhost:${PORT:-8080}', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
-
 # Iniciar servidor SSR
-# El servidor está en dist/t-parking/server/server.mjs
-# El servidor usa Express y escucha en PORT (Cloud Run inyecta esta variable)
-# Usar node directamente para que sea el proceso principal (PID 1)
-# El servidor maneja automáticamente el puerto desde process.env.PORT
 CMD ["node", "dist/t-parking/server/server.mjs"]
