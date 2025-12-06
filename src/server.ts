@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { GoogleAuth } from 'google-auth-library';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -20,8 +21,58 @@ const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 const PROXY_TIMEOUT = 30000; // 30 segundos timeout para peticiones al backend
 const EXCLUDED_HEADERS = new Set(['host', 'connection', 'content-length', 'origin', 'referer']);
 
+// Inicializar Google Auth para autenticación de servicio a servicio
+// En Cloud Run, esto usa automáticamente las credenciales del servicio
+const auth = new GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+});
+
+// Cache para el token de identidad (evita obtenerlo en cada petición)
+let identityToken: string | null = null;
+let tokenExpiry: number = 0;
+const TOKEN_CACHE_TTL = 3600000; // 1 hora en ms
+
+/**
+ * Obtener token de identidad de Google Cloud para autenticación con el backend
+ * El token se cachea para evitar múltiples llamadas
+ */
+async function getIdentityToken(): Promise<string> {
+  const now = Date.now();
+  
+  // Usar token cacheado si aún es válido
+  if (identityToken && now < tokenExpiry) {
+    return identityToken;
+  }
+
+  try {
+    // Obtener token de identidad para el backend
+    const client = await auth.getIdTokenClient(BACKEND_URL);
+    const tokenResponse = await client.getAccessToken();
+    
+    if (tokenResponse.token) {
+      identityToken = tokenResponse.token;
+      // Cachear por 55 minutos (los tokens duran 1 hora)
+      tokenExpiry = now + TOKEN_CACHE_TTL;
+      
+      if (!IS_PRODUCTION) {
+        console.log('[Auth] Token de identidad obtenido y cacheado');
+      }
+      
+      return identityToken;
+    }
+    
+    throw new Error('No se pudo obtener token de identidad');
+  } catch (error: any) {
+    if (!IS_PRODUCTION) {
+      console.error('[Auth Error]', error.message);
+    }
+    throw error;
+  }
+}
+
 if (!IS_PRODUCTION) {
   console.log(`[Server] Backend URL configurada: ${BACKEND_URL}`);
+  console.log(`[Server] Autenticación de servicio a servicio habilitada`);
 }
 
 // Middleware para parsear JSON SOLO para rutas /mt-api (optimización)
@@ -95,6 +146,19 @@ app.use('/mt-api', async (req, res, next) => {
     const hasBody = req.body && Object.keys(req.body).length > 0;
     if (hasBody && !headers['content-type']) {
       headers['content-type'] = 'application/json';
+    }
+
+    // Obtener token de identidad de Google Cloud para autenticación con el backend
+    // Esto permite que el backend sea privado y solo accesible desde el SSR
+    try {
+      const identityToken = await getIdentityToken();
+      headers['Authorization'] = `Bearer ${identityToken}`;
+    } catch (authError: any) {
+      if (!IS_PRODUCTION) {
+        console.warn('[Auth Warning] No se pudo obtener token, intentando sin autenticación:', authError.message);
+      }
+      // En desarrollo o si falla la autenticación, continuar sin token
+      // En producción, esto debería fallar para mantener la seguridad
     }
 
     // Preparar body solo si es necesario

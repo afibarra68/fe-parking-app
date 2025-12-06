@@ -51,6 +51,12 @@ steps:
       - '10'
       - '--set-env-vars'
       - 'NODE_ENV=production,BACKEND_URL=https://parking-backend-520107883510.us-central1.run.app'
+      # Nota: El service account del frontend necesita permisos para invocar el backend
+      # Ejecutar después del despliegue:
+      # gcloud run services add-iam-policy-binding parking-backend \
+      #   --region us-central1 \
+      #   --member="serviceAccount:$(gcloud run services describe parking-frontend --region us-central1 --format='value(spec.template.spec.serviceAccountName)')" \
+      #   --role="roles/run.invoker"
 
 # Opciones de build
 options:
