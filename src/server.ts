@@ -6,7 +6,6 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
-import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -18,40 +17,73 @@ const BACKEND_URL = process.env['API_URL'] || process.env['BACKEND_URL'] || 'htt
 
 console.log(`[Server] Backend URL configurada: ${BACKEND_URL}`);
 
+// Middleware para parsear JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 /**
  * Proxy para redirigir peticiones /mt-api al backend
  * Esto permite que el frontend use rutas relativas /mt-api y el servidor las redirige al backend
  * IMPORTANTE: Este middleware debe estar ANTES de servir archivos estáticos y renderizar Angular
  */
-app.use(
-  '/mt-api',
-  createProxyMiddleware({
-    target: BACKEND_URL,
-    changeOrigin: true,
-    secure: true, // Usar HTTPS para Cloud Run
-    pathRewrite: {
-      '^/mt-api': '', // Elimina /mt-api del path antes de enviar al backend
-    },
-    logLevel: 'info',
-    onProxyReq: (proxyReq, req, res) => {
-      const targetPath = req.url.replace('/mt-api', '');
-      console.log(`[Proxy] ${req.method} ${req.url} -> ${BACKEND_URL}${targetPath}`);
-    },
-    onProxyRes: (proxyRes, req, res) => {
-      console.log(`[Proxy Response] ${req.url} -> Status: ${proxyRes.statusCode}`);
-    },
-    onError: (err, req, res) => {
-      console.error('[Proxy Error]', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ 
-          error: 'Error connecting to backend', 
-          message: err.message,
-          backendUrl: BACKEND_URL
-        });
+app.use('/mt-api', async (req, res, next) => {
+  try {
+    const targetPath = req.url.replace('/mt-api', '');
+    const targetUrl = `${BACKEND_URL}${targetPath}${req.url.includes('?') ? '' : (Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query as Record<string, string>).toString() : '')}`;
+    
+    console.log(`[Proxy] ${req.method} ${req.url} -> ${targetUrl}`);
+
+    // Copiar headers relevantes, excluyendo algunos que no deben ser proxyados
+    const headers: Record<string, string> = {};
+    Object.keys(req.headers).forEach(key => {
+      const lowerKey = key.toLowerCase();
+      if (!['host', 'connection', 'content-length'].includes(lowerKey)) {
+        const value = req.headers[key];
+        if (typeof value === 'string') {
+          headers[key] = value;
+        } else if (Array.isArray(value) && value.length > 0) {
+          headers[key] = value[0];
+        }
       }
-    },
-  })
-);
+    });
+
+    // Realizar la petición al backend
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: headers,
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+    });
+
+    // Copiar headers de respuesta
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    // Enviar status code
+    res.status(response.status);
+
+    // Enviar body
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      res.json(data);
+    } else {
+      const data = await response.text();
+      res.send(data);
+    }
+
+    console.log(`[Proxy Response] ${req.url} -> Status: ${response.status}`);
+  } catch (error: any) {
+    console.error('[Proxy Error]', error.message);
+    if (!res.headersSent) {
+      res.status(502).json({
+        error: 'Error connecting to backend',
+        message: error.message,
+        backendUrl: BACKEND_URL
+      });
+    }
+  }
+});
 
 /**
  * Serve static files from /browser

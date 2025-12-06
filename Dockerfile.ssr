@@ -21,8 +21,11 @@ RUN npm run build -- --configuration production
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
-# Instalar solo dependencias de producción
+# Copiar package.json para instalar dependencias de producción
 COPY package*.json ./
+
+# Instalar solo dependencias de producción
+# http-proxy-middleware y express son necesarios para el servidor SSR
 RUN npm ci --only=production && npm cache clean --force
 
 # Copiar archivos compilados (mantener estructura para que server.mjs encuentre ../browser)
