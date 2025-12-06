@@ -34,11 +34,12 @@ steps:
         fi
         echo "✓ angular.json encontrado"
         
-        if [ ! -f "nginx.conf" ]; then
-          echo "ERROR: nginx.conf no encontrado"
+        # Verificar que Dockerfile.ssr existe (para SSR con Node.js)
+        if [ ! -f "Dockerfile.ssr" ]; then
+          echo "ERROR: Dockerfile.ssr no encontrado"
           exit 1
         fi
-        echo "✓ nginx.conf encontrado"
+        echo "✓ Dockerfile.ssr encontrado"
         
         # Verificar que la configuración de producción existe en angular.json
         if ! grep -q '"production"' angular.json; then
@@ -58,10 +59,12 @@ steps:
         
         echo "=== Todas las validaciones pasaron ==="
 
-  # Compilar la aplicación Angular
+  # Compilar la aplicación Angular con SSR (Node.js)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '-f'
+      - 'Dockerfile.ssr'
       - '--build-arg'
       - 'NODE_ENV=production'
       - '--build-arg'
@@ -126,20 +129,20 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--port'
-      - '80'
+      - '8080'
       - '--timeout'
-      - '300s'
+      - '600s'
       - '--cpu'
       - '1'
       - '--memory'
-      - '512Mi'
+      - '1Gi'
       - '--min-instances'
       - '${_MIN_INSTANCES}'
       - '--max-instances'
       - '${_MAX_INSTANCES}'
-      # Variables de entorno para producción
+      # Variables de entorno para producción con SSR
       - '--set-env-vars'
-      - 'NODE_ENV=production,PRODUCTION=true${_BACKEND_URL:+,API_URL=${_BACKEND_URL}}'
+      - 'NODE_ENV=production,PRODUCTION=true,PORT=8080${_BACKEND_URL:+,API_URL=${_BACKEND_URL}}'
     id: 'deploy-service'
   
   # Validar que el servicio se desplegó correctamente
