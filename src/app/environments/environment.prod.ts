@@ -4,8 +4,9 @@ export const environment = {
     applicationTimeout: 300000,
     rowsPerPage: 10,
     activeMocks: false,
-    // URL del backend en Cloud Run (actualizar con la URL real después del despliegue)
-    apiAuthJwt: 'https://parking-backend-520107883510.us-central1.run.app',
-    apiUrl: 'https://parking-backend-520107883510.us-central1.run.app'
+    // Usar /mt-api para que el servidor SSR haga proxy al backend
+    // El servidor SSR (server.ts) redirige /mt-api a la URL del backend configurada en BACKEND_URL
+    apiAuthJwt: '/mt-api',
+    apiUrl: '/mt-api'
 };
 
