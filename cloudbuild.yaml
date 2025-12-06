@@ -1,14 +1,77 @@
 # Cloud Build configuration para compilar y desplegar el frontend en Cloud Run
 steps:
+  # Validaciones para producción
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Validaciones para Producción ==="
+        
+        # Verificar que estamos en modo producción
+        if [ -z "$${_PRODUCTION}" ] || [ "$${_PRODUCTION}" != "true" ]; then
+          echo "ERROR: _PRODUCTION debe ser 'true' para desplegar en producción"
+          exit 1
+        fi
+        echo "✓ Modo producción confirmado"
+        
+        # Verificar que los archivos necesarios existan
+        if [ ! -f "Dockerfile" ]; then
+          echo "ERROR: Dockerfile no encontrado"
+          exit 1
+        fi
+        echo "✓ Dockerfile encontrado"
+        
+        if [ ! -f "package.json" ]; then
+          echo "ERROR: package.json no encontrado"
+          exit 1
+        fi
+        echo "✓ package.json encontrado"
+        
+        if [ ! -f "angular.json" ]; then
+          echo "ERROR: angular.json no encontrado"
+          exit 1
+        fi
+        echo "✓ angular.json encontrado"
+        
+        if [ ! -f "nginx.conf" ]; then
+          echo "ERROR: nginx.conf no encontrado"
+          exit 1
+        fi
+        echo "✓ nginx.conf encontrado"
+        
+        # Verificar que la configuración de producción existe en angular.json
+        if ! grep -q '"production"' angular.json; then
+          echo "ERROR: Configuración 'production' no encontrada en angular.json"
+          exit 1
+        fi
+        echo "✓ Configuración production encontrada en angular.json"
+        
+        # Verificar variables de entorno críticas si están definidas
+        if [ -n "$${_BACKEND_URL}" ]; then
+          if [[ ! "$${_BACKEND_URL}" =~ ^https?:// ]]; then
+            echo "ERROR: _BACKEND_URL debe ser una URL válida (http:// o https://)"
+            exit 1
+          fi
+          echo "✓ _BACKEND_URL válida: $${_BACKEND_URL}"
+        fi
+        
+        echo "=== Todas las validaciones pasaron ==="
+
   # Compilar la aplicación Angular
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'NODE_ENV=production'
+      - '--build-arg'
+      - 'PRODUCTION=true'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:latest'
       - '.'
+    id: 'build-image'
 
   # Push a Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -20,6 +83,33 @@ steps:
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:latest'
+  
+  # Validar que la imagen se construyó correctamente (antes del push)
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Validando imagen Docker ==="
+        IMAGE_TAG="us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA"
+        
+        # Verificar que la imagen existe localmente
+        if ! docker image inspect $$IMAGE_TAG >/dev/null 2>&1; then
+          echo "ERROR: Imagen no encontrada: $$IMAGE_TAG"
+          exit 1
+        fi
+        echo "✓ Imagen construida correctamente: $$IMAGE_TAG"
+        
+        # Verificar que la imagen tiene contenido (no está vacía)
+        IMAGE_ID=$(docker image inspect $$IMAGE_TAG --format '{{.Id}}')
+        if [ -z "$$IMAGE_ID" ]; then
+          echo "ERROR: Imagen está vacía o corrupta"
+          exit 1
+        fi
+        echo "✓ Imagen válida con ID: $$IMAGE_ID"
+        
+        echo "=== Validación de imagen completada ==="
+    waitFor: ['build-image']
 
   # Desplegar en Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -44,16 +134,70 @@ steps:
       - '--memory'
       - '512Mi'
       - '--min-instances'
-      - '0'
+      - '${_MIN_INSTANCES}'
       - '--max-instances'
-      - '10'
-      # Opcional: Configurar variables de entorno para la URL del backend
-      # - '--set-env-vars'
-      # - 'API_URL=${_BACKEND_URL}'
+      - '${_MAX_INSTANCES}'
+      # Variables de entorno para producción
+      - '--set-env-vars'
+      - 'NODE_ENV=production,PRODUCTION=true${_BACKEND_URL:+,API_URL=${_BACKEND_URL}}'
+    id: 'deploy-service'
+  
+  # Validar que el servicio se desplegó correctamente
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== Validando despliegue en Cloud Run ==="
+        
+        # Esperar un momento para que el servicio esté listo
+        sleep 10
+        
+        # Obtener la URL del servicio
+        SERVICE_URL=$(gcloud run services describe parking-frontend \
+          --region us-central1 \
+          --platform managed \
+          --format 'value(status.url)' 2>/dev/null)
+        
+        if [ -z "$$SERVICE_URL" ]; then
+          echo "ERROR: No se pudo obtener la URL del servicio"
+          exit 1
+        fi
+        echo "✓ Servicio desplegado en: $$SERVICE_URL"
+        
+        # Verificar que el servicio está activo
+        SERVICE_STATUS=$(gcloud run services describe parking-frontend \
+          --region us-central1 \
+          --platform managed \
+          --format 'value(status.conditions[0].status)' 2>/dev/null)
+        
+        if [ "$$SERVICE_STATUS" != "True" ]; then
+          echo "ERROR: El servicio no está en estado activo"
+          exit 1
+        fi
+        echo "✓ Servicio está activo"
+        
+        # Verificar que el servicio responde (opcional, puede fallar si está en cold start)
+        echo "Verificando respuesta del servicio..."
+        if curl -f -s -o /dev/null -w "%{http_code}" --max-time 30 "$$SERVICE_URL" | grep -q "200\|404"; then
+          echo "✓ Servicio responde correctamente"
+        else
+          echo "⚠ Advertencia: El servicio puede estar iniciando (cold start)"
+        fi
+        
+        echo "=== Validación de despliegue completada ==="
+        echo "URL del servicio: $$SERVICE_URL"
+    waitFor: ['deploy-service']
 
 # Variables de sustitución (configurar en Cloud Build)
 substitutions:
-  # _BACKEND_URL: 'https://parking-backend-520107883510.us-central1.run.app'  # URL del backend
+  # Variable requerida: debe ser 'true' para desplegar en producción
+  _PRODUCTION: 'true'
+  # Configuración de instancias para producción
+  _MIN_INSTANCES: '0'  # Mínimo 0 para ahorrar costos, cambiar a 1 para evitar cold starts
+  _MAX_INSTANCES: '10'  # Ajustar según tráfico esperado
+  # Opcional: URL del backend (se inyecta como variable de entorno)
+  # _BACKEND_URL: 'https://parking-backend-520107883510.us-central1.run.app'
 
 # Opciones de build
 options:
