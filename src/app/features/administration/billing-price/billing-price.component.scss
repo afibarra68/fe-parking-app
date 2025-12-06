@@ -83,6 +83,107 @@
   }
 }
 
+// Responsive para portátiles pequeños y tablets
+@media (max-width: 1024px) {
+  .billing-price-container {
+    padding: 1rem;
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.75rem;
+    }
+  }
+
+  .search-bar {
+    padding: 0.75rem;
+
+    .search-fields {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .search-actions {
+      flex-wrap: wrap;
+      justify-content: stretch;
+
+      ::ng-deep .p-button {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+  }
+}
+
+// Responsive para tablets pequeñas
+@media (max-width: 768px) {
+  .billing-price-container {
+    padding: 0.75rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    ::ng-deep .p-button {
+      width: 100%;
+    }
+  }
+
+  .search-bar {
+    padding: 0.75rem;
+
+    .search-fields {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .search-actions {
+      flex-direction: column;
+      gap: 0.5rem;
+
+      ::ng-deep .p-button {
+        width: 100%;
+      }
+    }
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Responsive para móviles
+@media (max-width: 480px) {
+  .billing-price-container {
+    padding: 0.5rem;
+  }
+
+  .header {
+    h1 {
+      font-size: 1.25rem;
+    }
+  }
+
+  .search-bar {
+    padding: 0.5rem;
+
+    .search-fields {
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
 .form-group {
   margin-bottom: 1.5rem;
 

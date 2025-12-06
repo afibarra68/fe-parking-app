@@ -1,0 +1,69 @@
+# Cloud Build configuration para compilar y desplegar el frontend en Cloud Run
+steps:
+  # Compilar la aplicación Angular
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:latest'
+      - '.'
+
+  # Push a Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:latest'
+
+  # Desplegar en Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'parking-frontend'
+      - '--image'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '80'
+      - '--timeout'
+      - '300s'
+      - '--cpu'
+      - '1'
+      - '--memory'
+      - '512Mi'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      # Opcional: Configurar variables de entorno para la URL del backend
+      # - '--set-env-vars'
+      # - 'API_URL=${_BACKEND_URL}'
+
+# Variables de sustitución (configurar en Cloud Build)
+substitutions:
+  # _BACKEND_URL: 'https://parking-backend-520107883510.us-central1.run.app'  # URL del backend
+
+# Opciones de build
+options:
+  machineType: 'E2_MEDIUM'
+  logging: CLOUD_LOGGING_ONLY
+
+# Timeout
+timeout: '1200s'
+
+# Imágenes a almacenar
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/parking-services-repo/parking-frontend:latest'

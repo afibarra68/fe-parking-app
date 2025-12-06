@@ -10,26 +10,30 @@
   </div>
 
   <form [formGroup]="searchForm" class="search-bar" *ngIf="!showForm">
-    <app-select-lib
-      formControlName="companyId"
-      [options]="companyOptions"
-      label="Empresa"
-      [filter]="true"
-      [virtualScroll]="false"
-      [scrollHeight]="'200px'"
-      [appendTo]="'body'">
-    </app-select-lib>
-    
-    <app-select-lib
-      formControlName="businessServiceId"
-      [options]="businessServiceOptions"
-      label="Servicio de Negocio"
-      [filter]="true"
-      [virtualScroll]="false"
-      [scrollHeight]="'200px'"
-      [appendTo]="'body'">
-    </app-select-lib>
-    
+    <div class="search-fields">
+      <div class="search-field">
+        <app-select-lib
+          formControlName="companyId"
+          [options]="companyOptions"
+          label="Empresa"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib
+          formControlName="businessServiceId"
+          [options]="businessServiceOptions"
+          label="Servicio de Negocio"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+    </div>
     <div class="search-actions">
       <p-button 
         label="Buscar" 

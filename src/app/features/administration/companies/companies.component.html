@@ -11,20 +11,30 @@
 
   @if (!showForm) {
   <div class="search-bar" [formGroup]="searchForm">
-    <input 
-      type="text" 
-      pInputText 
-      formControlName="companyName"
-      placeholder="Buscar por nombre de empresa..."
-      (keyup.enter)="search()"
-    />
-    <input 
-      type="text" 
-      pInputText 
-      formControlName="numberIdentity"
-      placeholder="Buscar por número de identidad..."
-      (keyup.enter)="search()"
-    />
+    <div class="search-fields">
+      <div class="search-field">
+        <label for="companyName">Nombre de Empresa</label>
+        <input 
+          id="companyName"
+          type="text" 
+          pInputText 
+          formControlName="companyName"
+          placeholder="Buscar por nombre de empresa..."
+          (keyup.enter)="search()"
+        />
+      </div>
+      <div class="search-field">
+        <label for="numberIdentity">Número de Identidad</label>
+        <input 
+          id="numberIdentity"
+          type="text" 
+          pInputText 
+          formControlName="numberIdentity"
+          placeholder="Buscar por número de identidad..."
+          (keyup.enter)="search()"
+        />
+      </div>
+    </div>
     <div class="search-actions">
       <p-button 
         label="Buscar" 

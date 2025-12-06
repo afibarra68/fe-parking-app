@@ -2,11 +2,14 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copiar archivos de configuración
+# Copiar archivos de configuración primero para cachear dependencias
+# Esta capa se cachea si package*.json no cambia
 COPY package*.json ./
-RUN npm ci
 
-# Copiar código fuente
+# Instalar dependencias (npm ci es más rápido y determinístico que npm install)
+RUN npm ci --only=production=false
+
+# Copiar código fuente (solo se recompila si el código cambia)
 COPY . .
 
 # Compilar la aplicación para producción
