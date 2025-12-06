@@ -1,0 +1,41 @@
+# Dockerfile para Angular 20 con SSR en Cloud Run
+# Opción 2: Usar Node.js para Server-Side Rendering
+
+# Stage 1: Build
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Copiar archivos de configuración primero para cachear dependencias
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm ci --only=production=false
+
+# Copiar código fuente
+COPY . .
+
+# Compilar la aplicación para producción con SSR
+RUN npm run build -- --configuration production
+
+# Stage 2: Runtime con Node.js
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+# Instalar solo dependencias de producción
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copiar archivos compilados del servidor
+COPY --from=build /app/dist/t-parking/server ./dist/t-parking/server
+COPY --from=build /app/dist/t-parking/browser ./dist/t-parking/browser
+
+# Variables de entorno
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Exponer puerto (Cloud Run usa PORT variable)
+EXPOSE 8080
+
+# Iniciar servidor SSR
+# El servidor está en dist/t-parking/server/server.mjs según package.json
+CMD ["node", "dist/t-parking/server/server.mjs"]

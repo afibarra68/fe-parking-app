@@ -1,43 +1,35 @@
-# Dockerfile para Angular Admin Frontend
+# Dockerfile optimizado para Angular 20 en Cloud Run
+# Opción 1: Servir como aplicación estática con Nginx (recomendado)
+
+# Stage 1: Build
 FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copiar archivos de configuración primero para cachear dependencias
-# Esta capa se cachea si package*.json no cambia
 COPY package*.json ./
 
-# Instalar dependencias (npm ci es más rápido y determinístico que npm install)
+# Instalar dependencias (npm ci es más rápido y determinístico)
 RUN npm ci --only=production=false
 
-# Copiar código fuente (solo se recompila si el código cambia)
+# Copiar código fuente
 COPY . .
 
 # Compilar la aplicación para producción
+# Con Angular 20, esto genera dist/t-parking/browser y dist/t-parking/server
 RUN npm run build -- --configuration production
 
-# Verificar dónde se generaron los archivos (para debugging)
-RUN echo "=== Dist structure ===" && \
-    find /app/dist -type f -name "*.html" 2>/dev/null | head -10 && \
-    echo "=== Full dist listing ===" && \
-    ls -laR /app/dist/ | head -50
-
-# Imagen final con Nginx
+# Stage 2: Runtime con Nginx
 FROM nginx:alpine
 
-# Copiar el script de copia desde el contexto de build
-COPY copy-dist.sh /tmp/copy-dist.sh
-RUN chmod +x /tmp/copy-dist.sh
-
-# Copiar todo el directorio dist para que el script pueda buscar
-COPY --from=build /app/dist /app/dist
-
-# Ejecutar script para copiar archivos correctamente
-RUN /tmp/copy-dist.sh && rm -rf /app/dist /tmp/copy-dist.sh
+# Copiar archivos compilados del cliente (browser)
+# Angular 20 genera los archivos estáticos en dist/t-parking/browser
+COPY --from=build /app/dist/t-parking/browser /usr/share/nginx/html
 
 # Copiar configuración de Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Exponer puerto 80
 EXPOSE 80
 
+# Iniciar Nginx
 CMD ["nginx", "-g", "daemon off;"]
-
