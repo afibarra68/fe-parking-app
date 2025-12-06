@@ -15,12 +15,24 @@ COPY . .
 # Compilar la aplicación para producción
 RUN npm run build -- --configuration production
 
+# Verificar dónde se generaron los archivos (para debugging)
+RUN echo "=== Dist structure ===" && \
+    find /app/dist -type f -name "*.html" 2>/dev/null | head -10 && \
+    echo "=== Full dist listing ===" && \
+    ls -laR /app/dist/ | head -50
+
 # Imagen final con Nginx
 FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
 
-# Copiar archivos compilados
-COPY --from=build /app/dist/t-parking/browser .
+# Copiar el script de copia desde el contexto de build
+COPY copy-dist.sh /tmp/copy-dist.sh
+RUN chmod +x /tmp/copy-dist.sh
+
+# Copiar todo el directorio dist para que el script pueda buscar
+COPY --from=build /app/dist /app/dist
+
+# Ejecutar script para copiar archivos correctamente
+RUN /tmp/copy-dist.sh && rm -rf /app/dist /tmp/copy-dist.sh
 
 # Copiar configuración de Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
