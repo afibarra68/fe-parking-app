@@ -1,0 +1,162 @@
+<div class="user-printers-container">
+  <div class="header">
+    <h1>Relaciones Usuario - Impresora</h1>
+    <p-button 
+      label="Nueva Relación" 
+      icon="pi pi-plus" 
+      (onClick)="openCreateForm()" 
+      [disabled]="loading">
+    </p-button>
+  </div>
+
+  <form [formGroup]="searchForm" class="search-bar" *ngIf="!showForm">
+    <div class="search-fields">
+      <div class="search-field">
+        <app-select-lib
+          formControlName="userUserId"
+          [options]="userOptions"
+          label="Usuario"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib
+          formControlName="printerPrinterId"
+          [options]="printerOptions"
+          label="Impresora"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib
+          formControlName="isActive"
+          [options]="[{label: 'Activo', value: true}, {label: 'Inactivo', value: false}]"
+          label="Estado"
+          [filter]="false"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+    </div>
+    <div class="search-actions">
+      <p-button 
+        label="Buscar" 
+        icon="pi pi-search" 
+        (onClick)="search()" 
+        [disabled]="loading"
+        styleClass="p-button-secondary">
+      </p-button>
+      <p-button 
+        label="Limpiar" 
+        icon="pi pi-times" 
+        (onClick)="clearSearch()" 
+        [disabled]="loading"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </form>
+
+  <p-message 
+    *ngIf="error" 
+    severity="error" 
+    [text]="error"
+    [closable]="true"
+    (onClose)="error = null">
+  </p-message>
+
+  <p-dialog 
+    [(visible)]="showForm" 
+    [header]="editingUserPrinter ? 'Editar Relación Usuario-Impresora' : 'Nueva Relación Usuario-Impresora'"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [contentStyle]="{overflow: 'auto', padding: '1rem'}"
+    (onHide)="cancelForm()">
+    <form [formGroup]="form" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <app-select-lib
+          formControlName="userUserId"
+          [options]="userOptions"
+          label="Usuario *"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+        <small 
+          class="p-error" 
+          *ngIf="form.get('userUserId')?.invalid && form.get('userUserId')?.touched">
+          El usuario es requerido
+        </small>
+      </div>
+
+      <div class="form-group">
+        <app-select-lib
+          formControlName="printerPrinterId"
+          [options]="printerOptions"
+          label="Impresora *"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+        <small 
+          class="p-error" 
+          *ngIf="form.get('printerPrinterId')?.invalid && form.get('printerPrinterId')?.touched">
+          La impresora es requerida
+        </small>
+      </div>
+
+      <div class="form-group">
+        <p-checkbox
+          formControlName="isActive"
+          label="Activa"
+          [binary]="true">
+        </p-checkbox>
+      </div>
+
+      <div class="form-actions">
+        <p-button 
+          type="submit"
+          [label]="loading ? 'Guardando...' : (editingUserPrinter ? 'Actualizar' : 'Crear')"
+          icon="pi pi-check"
+          [disabled]="form.invalid || loading"
+          [loading]="loading">
+        </p-button>
+        <p-button 
+          type="button"
+          label="Cancelar" 
+          icon="pi pi-times"
+          (onClick)="cancelForm()" 
+          [disabled]="loading"
+          styleClass="p-button-secondary">
+        </p-button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <div *ngIf="!showForm" class="table-container">
+    <app-table-lib
+      *ngIf="(tableData$ | async) as tableData"
+      [cols]="cols"
+      [dataTable]="tableData"
+      [hasEdit]="true"
+      [hasDelete]="true"
+      [hasDetail]="false"
+      [hasReport]="false"
+      (onEdit)="onTableEdit($event)"
+      (onDelete)="onTableDelete($event)"
+      (pagination)="onTablePagination($event)">
+    </app-table-lib>
+  </div>
+</div>
+

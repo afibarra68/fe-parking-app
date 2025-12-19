@@ -5,6 +5,7 @@ import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../
 import { CompanyService, Company } from '../../../core/services/company.service';
 import { TipoVehiculoService, TipoVehiculo } from '../../../core/services/tipo-vehiculo.service';
 import { CompanyBusinessServiceService, CompanyBusinessService } from '../../../core/services/company-business-service.service';
+import { EnumResource } from '../../../core/services/enum.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -38,7 +39,7 @@ import { catchError, finalize, shareReplay } from 'rxjs/operators';
 })
 export class BillingPriceComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
-  
+
   // Signals para mejor rendimiento y reactividad
   loading = signal(false);
   showForm = signal(false);
@@ -48,15 +49,15 @@ export class BillingPriceComponent implements OnInit {
   tipoVehiculoOptions = signal<SelectItem[]>([]);
   businessServiceOptions = signal<SelectItem[]>([]);
   currentCompanyId = signal<number | null>(null);
-  
+
   // Cache para mapeo rápido de tipoVehiculo
   private tipoVehiculoMap = new Map<string, string>();
-  
+
   // Paginación
   page = signal(0);
   size = signal(environment.rowsPerPage || 10);
   first = signal(0);
-  
+
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
     totalRecords: 0,
@@ -72,7 +73,7 @@ export class BillingPriceComponent implements OnInit {
     { field: 'tipoVehiculoDisplay', header: 'Tipo de Vehículo', width: '150px' },
     { field: 'start', header: 'Inicio (horas)', width: '120px' },
     { field: 'end', header: 'Fin (horas)', width: '120px' },
-    { field: 'mount', header: 'Monto', width: '120px' },
+    { field: 'mount', header: 'Valor por hora', width: '120px' },
     { field: 'applyDiscount', header: 'Aplica Descuento', width: '150px' }
   ];
 
@@ -140,7 +141,7 @@ export class BillingPriceComponent implements OnInit {
         next: (companyBusinessServices) => {
           const options = (Array.isArray(companyBusinessServices) ? companyBusinessServices : [])
             .map(cbs => ({
-              label: cbs.businessService 
+              label: cbs.businessService
                 ? `${cbs.businessService.principalName} (${cbs.businessService.code})`
                 : 'Sin nombre',
               value: cbs.businessService?.businessServiceId
@@ -184,7 +185,7 @@ export class BillingPriceComponent implements OnInit {
             value: tipo.id
           }));
           this.tipoVehiculoOptions.set(options);
-          
+
           // Crear mapa para búsqueda O(1) en lugar de O(n)
           this.tipoVehiculoMap.clear();
           tiposVehiculo.forEach(tipo => {
@@ -197,13 +198,13 @@ export class BillingPriceComponent implements OnInit {
   loadBillingPrices(): void {
     this.loading.set(true);
     this.error.set(null);
-    
+
     const filters = {
       status: this.searchForm.value.status?.trim() || undefined,
       tipoVehiculo: this.searchForm.value.tipoVehiculo || undefined,
       companyCompanyId: this.searchForm.value.companyCompanyId || undefined
     };
-    
+
     this.billingPriceService.getPageable(this.page(), this.size(), filters)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
@@ -214,7 +215,9 @@ export class BillingPriceComponent implements OnInit {
           // Formatear tipoVehiculo usando el mapa cacheado para mejor rendimiento
           const formattedData = data.content.map(item => ({
             ...item,
-            tipoVehiculoDisplay: this.getTipoVehiculoDescription(item.tipoVehiculo)
+            tipoVehiculoDisplay: this.getTipoVehiculoDescription(
+              item.tipoVehiculo as EnumResource | string | null | undefined
+            )
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -261,7 +264,7 @@ export class BillingPriceComponent implements OnInit {
       mount: event.mount || null,
       tipoVehiculo: event.tipoVehiculo || null
     });
-    
+
     // Si hay companyCompanyId, cargar servicios de negocio de esa empresa
     if (event.companyCompanyId) {
       this.loadBusinessServicesByCompany(event.companyCompanyId);
@@ -365,10 +368,16 @@ export class BillingPriceComponent implements OnInit {
     this.search();
   }
 
-  getTipoVehiculoDescription(tipoVehiculoId: string | null | undefined): string {
-    if (!tipoVehiculoId) return '-';
+  getTipoVehiculoDescription(tipoVehiculo: EnumResource | string | null | undefined): string {
+    if (!tipoVehiculo) return '-';
+    // Si es un objeto EnumResource, usar description
+    if (typeof tipoVehiculo === 'object' && tipoVehiculo.description) {
+      return tipoVehiculo.description;
+    }
+    // Si es string (id), buscar en el mapa
+    const tipoVehiculoId = typeof tipoVehiculo === 'string' ? tipoVehiculo : tipoVehiculo?.id;
     // Usar mapa cacheado para búsqueda O(1) en lugar de O(n)
-    return this.tipoVehiculoMap.get(tipoVehiculoId) || tipoVehiculoId;
+    return this.tipoVehiculoMap.get(tipoVehiculoId || '') || tipoVehiculoId || '-';
   }
 
   onCompanyChange(event: any): void {

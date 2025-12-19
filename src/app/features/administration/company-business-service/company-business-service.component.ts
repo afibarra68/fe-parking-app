@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CompanyBusinessServiceService, CompanyBusinessService } from '../../../core/services/company-business-service.service';
 import { CompanyService, Company } from '../../../core/services/company.service';
 import { BusinessServiceService, BusinessService } from '../../../core/services/business-service.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -12,6 +13,7 @@ import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { SelectItem } from 'primeng/api';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-company-business-service',
@@ -66,6 +68,7 @@ export class CompanyBusinessServiceComponent implements OnDestroy {
     private companyBusinessServiceService: CompanyBusinessServiceService,
     private companyService: CompanyService,
     private businessServiceService: BusinessServiceService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -257,20 +260,24 @@ export class CompanyBusinessServiceComponent implements OnDestroy {
 
   onTableDelete(selected: any): void {
     if (selected && selected.companyBusinessServiceId) {
-      if (confirm(`¿Está seguro de eliminar esta relación?`)) {
-        this.loading = true;
-        this.companyBusinessServiceService.delete(selected.companyBusinessServiceId)
-          .subscribe({
-            next: () => {
-              this.loading = false;
-              this.loadRelations();
-            },
-            error: (err: any) => {
-              this.error = err?.error?.message || 'Error al eliminar la relación';
-              this.loading = false;
-            }
-          });
-      }
+      this.confirmationService.confirmDelete('esta relación')
+        .pipe(
+          filter(confirmed => confirmed),
+          switchMap(() => {
+            this.loading = true;
+            return this.companyBusinessServiceService.delete(selected.companyBusinessServiceId);
+          })
+        )
+        .subscribe({
+          next: () => {
+            this.loading = false;
+            this.loadRelations();
+          },
+          error: (err: any) => {
+            this.error = err?.error?.message || 'Error al eliminar la relación';
+            this.loading = false;
+          }
+        });
     }
   }
 

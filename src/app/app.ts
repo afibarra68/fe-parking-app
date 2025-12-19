@@ -2,14 +2,16 @@ import { Component, signal, inject, afterNextRender, computed, ChangeDetectionSt
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarComponent } from './core/components/sidebar/sidebar.component';
 import { UserControlComponent } from './core/components/user-control/user-control.component';
+import { MobileMenuButtonComponent } from './core/components/mobile-menu-button/mobile-menu-button.component';
 import { CommonModule } from '@angular/common';
 import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from './core/services/auth.service';
 import { SidebarService } from './core/services/sidebar.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarComponent, UserControlComponent, CommonModule],
+  imports: [RouterOutlet, SidebarComponent, UserControlComponent, MobileMenuButtonComponent, CommonModule, ConfirmDialogModule],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -19,20 +21,37 @@ export class App {
   private router = inject(Router);
   private authService = inject(AuthService);
   private sidebarService = inject(SidebarService);
-  
+
   // Usar computed para derivar el estado del sidebar colapsado directamente del servicio
+  // Esto se actualiza automáticamente cuando el sidebar cambia
   readonly sidebarCollapsed = computed(() => this.sidebarService.collapsed());
-  
+
   // Signal para controlar la visibilidad del sidebar
   private readonly isAuthenticated = signal(false);
   private readonly currentRoute = signal<string>('');
-  
+
   // Computed signal para mostrar/ocultar sidebar
   readonly showSidebar = computed(() => {
     const auth = this.isAuthenticated();
     const route = this.currentRoute();
     const isAuthPage = route.startsWith('/auth') || route === '/login';
     return auth && !isAuthPage;
+  });
+
+  // Computed signal para calcular el ancho del header basado en el estado del sidebar
+  readonly headerWidth = computed(() => {
+    if (!this.showSidebar()) {
+      return '100%';
+    }
+    return this.sidebarCollapsed() ? 'calc(100% - 60px)' : 'calc(100% - 260px)';
+  });
+
+  // Computed signal para calcular la posición izquierda del header
+  readonly headerLeft = computed(() => {
+    if (!this.showSidebar()) {
+      return '0';
+    }
+    return this.sidebarCollapsed() ? '60px' : '260px';
   });
 
   constructor() {
@@ -42,7 +61,7 @@ export class App {
       const updateSidebarState = () => {
         const currentUrl = this.router.url;
         const isAuthenticated = this.authService.isAuthenticated();
-        
+
         // Solo actualizar si los valores han cambiado para evitar re-renderizados innecesarios
         if (this.currentRoute() !== currentUrl) {
           this.currentRoute.set(currentUrl);

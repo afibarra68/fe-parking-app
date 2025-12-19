@@ -76,6 +76,11 @@ export class UserRoleService {
     return this.http.post<void>(`${this.apiUrl}/user_role`, userRole);
   }
 
+  // Actualizar relación usuario-rol
+  update(userRoleId: number, userRole: CreateUserRole): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/user_role/${userRoleId}`, userRole);
+  }
+
   // Eliminar relación usuario-rol
   delete(userRoleId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/user_role/${userRoleId}`);

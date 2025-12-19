@@ -1,0 +1,135 @@
+<div class="billing-price-container">
+  <div class="header">
+    <h1>Tarifas</h1>
+    <p-button label="Nueva Tarifa" icon="pi pi-plus" (onClick)="openCreateForm()" [disabled]="loading()">
+    </p-button>
+  </div>
+
+  @if (!showForm()) {
+  <div class="search-bar" [formGroup]="searchForm">
+    <div class="search-fields">
+      <div class="search-field">
+        <app-select-lib formControlName="status" [options]="statusOptions()" label="Estado" [filter]="false"
+          [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib formControlName="tipoVehiculo" [options]="tipoVehiculoOptions()" label="Tipo de Vehículo"
+          [filter]="false" [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+      <div class="search-field">
+        <app-select-lib formControlName="companyCompanyId" [options]="companyOptions()" label="Empresa" [filter]="false"
+          [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+    </div>
+    <div class="search-actions">
+      <p-button label="Buscar" icon="pi pi-search" (onClick)="search()" [disabled]="loading()"
+        styleClass="p-button-secondary">
+      </p-button>
+      <p-button label="Limpiar" icon="pi pi-times" (onClick)="clearSearch()" [disabled]="loading()"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </div>
+  }
+
+  @if (error()) {
+  <p-message severity="error" [text]="error() || ''" [closable]="true" (onClose)="error.set(null)">
+  </p-message>
+  }
+
+  <p-dialog [visible]="showForm()" (visibleChange)="showForm.set($event)"
+    [header]="editingBillingPrice() ? 'Editar Tarifa' : 'Nueva Tarifa'" [modal]="true" [style]="{width: '700px'}"
+    [closable]="true" [draggable]="false" [resizable]="false" [dismissableMask]="true" [closeOnEscape]="true"
+    [contentStyle]="{overflow: 'visible', padding: '1rem'}" (onHide)="cancelForm()">
+    <form [formGroup]="form" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <app-select-lib formControlName="status" [options]="statusOptions()" label="Estado" [filter]="false"
+          [showClear]="true" [floatLabel]="false" [virtualScroll]="false" [scrollHeight]="'300px'" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <app-select-lib formControlName="tipoVehiculo" [options]="tipoVehiculoOptions()" label="Tipo de Vehículo"
+            [filter]="false" [showClear]="true" [floatLabel]="false" [virtualScroll]="false" [scrollHeight]="'300px'"
+            [appendTo]="'body'">
+          </app-select-lib>
+        </div>
+
+        <div class="form-group">
+          <label for="coverType">Tipo de Cobertura</label>
+          <input id="coverType" type="text" pInputText formControlName="coverType" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="pricePerHour">Precio por Hora *</label>
+        <p-inputNumber id="pricePerHour" formControlName="pricePerHour" [min]="0" [showButtons]="true"
+          [useGrouping]="true" [mode]="'decimal'" [minFractionDigits]="2" [maxFractionDigits]="2"
+          placeholder="Precio por hora">
+        </p-inputNumber>
+        @if (form.get('pricePerHour')?.invalid && form.get('pricePerHour')?.touched) {
+        <small class="p-error">
+          El precio por hora debe ser mayor o igual a 0
+        </small>
+        }
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <app-select-lib formControlName="companyCompanyId" [options]="companyOptions()" label="Empresa"
+            [filter]="false" [showClear]="true" [floatLabel]="false" [virtualScroll]="false" [scrollHeight]="'300px'"
+            [appendTo]="'body'" (onChange)="onCompanyChange($event)">
+          </app-select-lib>
+        </div>
+
+        <div class="form-group">
+          <label for="discountDiscountId">ID Descuento</label>
+          <p-inputNumber id="discountDiscountId" formControlName="discountDiscountId" [showButtons]="true"
+            [useGrouping]="false" placeholder="ID del descuento">
+          </p-inputNumber>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <app-select-lib formControlName="businessServiceBusinessServiceId" [options]="businessServiceOptions()"
+          label="Servicio de Negocio" [filter]="true" [showClear]="true" [floatLabel]="false" [virtualScroll]="false"
+          [scrollHeight]="'200px'" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
+
+
+      <div class="form-group">
+        <label for="applyDiscount">Aplica Descuento</label>
+        <p-checkbox formControlName="applyDiscount" inputId="applyDiscount" [binary]="true">
+        </p-checkbox>
+      </div>
+
+      <div class="form-actions">
+        <p-button type="submit" [label]="loading() ? 'Guardando...' : (editingBillingPrice() ? 'Actualizar' : 'Crear')"
+          icon="pi pi-check" [disabled]="form.invalid || loading()" [loading]="loading()">
+        </p-button>
+        <p-button type="button" label="Cancelar" icon="pi pi-times" (onClick)="cancelForm()" [disabled]="loading()"
+          styleClass="p-button-secondary">
+        </p-button>
+      </div>
+    </form>
+  </p-dialog>
+
+  @if (!showForm()) {
+  <div class="table-container">
+    <app-spinner [loading]="loading()" size="normal" message="Cargando tarifas..." [overlay]="true">
+    </app-spinner>
+
+    @if ((tableData$ | async); as tableData) {
+    <app-table-lib [cols]="cols" [dataTable]="tableData" [hasEdit]="true" [hasDelete]="true" [hasDetail]="false"
+      [hasReport]="false" (onEdit)="onTableEdit($event)" (onDelete)="onTableDelete($event)"
+      (pagination)="onTablePagination($event)">
+    </app-table-lib>
+    }
+  </div>
+  }
+</div>

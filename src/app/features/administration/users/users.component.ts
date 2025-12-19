@@ -2,6 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { UserService, User, UserPageResponse } from '../../../core/services/user.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -10,6 +11,7 @@ import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-users',
@@ -31,14 +33,14 @@ export class UsersComponent implements OnDestroy {
   showForm = false;
   editingUser: User | null = null;
   error: string | null = null;
-  
+
   // Paginación
   page: number = 0;
   size: number = environment.rowsPerPage || 10;
   first = 0;
-  
+
   private subscription?: Subscription;
-  
+
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
     totalRecords: 0,
@@ -64,6 +66,7 @@ export class UsersComponent implements OnDestroy {
 
   constructor(
     private userService: UserService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -99,7 +102,7 @@ export class UsersComponent implements OnDestroy {
 
     this.loading = true;
     this.error = null;
-    
+
     const filters: any = {};
     if (this.searchForm.value.appUserId) {
       filters.appUserId = this.searchForm.value.appUserId;
@@ -110,7 +113,7 @@ export class UsersComponent implements OnDestroy {
     if (this.searchForm.value.companyCompanyId) {
       filters.companyCompanyId = this.searchForm.value.companyCompanyId;
     }
-    
+
     this.subscription = this.userService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: UserPageResponse) => {
@@ -158,20 +161,29 @@ export class UsersComponent implements OnDestroy {
   }
 
   onTableDelete(selected: any): void {
-    if (selected && confirm(`¿Está seguro de eliminar el usuario "${selected.firstName} ${selected.lastName}"?`)) {
-      if (selected.numberIdentity) {
-        this.loading = true;
-        this.userService.delete(Number(selected.numberIdentity)).subscribe({
+    if (selected && selected.numberIdentity) {
+      const itemName = selected.firstName && selected.lastName 
+        ? `el usuario "${selected.firstName} ${selected.lastName}"`
+        : 'este usuario';
+      
+      this.confirmationService.confirmDelete(itemName)
+        .pipe(
+          filter((confirmed: boolean) => confirmed),
+          switchMap(() => {
+            this.loading = true;
+            return this.userService.delete(Number(selected.numberIdentity));
+          })
+        )
+        .subscribe({
           next: () => {
             this.loading = false;
             this.loadUsers();
           },
-          error: (err) => {
+          error: (err: any) => {
             this.error = err?.error?.message || 'Error al eliminar el usuario';
             this.loading = false;
           }
         });
-      }
     }
   }
 
@@ -225,7 +237,11 @@ export class UsersComponent implements OnDestroy {
       userData.appUserId = this.editingUser.appUserId;
     }
 
-    this.userService.create(userData).subscribe({
+    const operation = this.editingUser?.appUserId
+      ? this.userService.update(userData)
+      : this.userService.create(userData);
+
+    operation.subscribe({
       next: () => {
         this.loading = false;
         this.showForm = false;
@@ -236,7 +252,6 @@ export class UsersComponent implements OnDestroy {
       error: (err) => {
         this.error = err?.error?.message || 'Error al guardar el usuario';
         this.loading = false;
-        console.error('Error:', err);
       }
     });
   }

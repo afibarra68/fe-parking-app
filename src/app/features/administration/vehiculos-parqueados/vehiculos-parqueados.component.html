@@ -6,72 +6,36 @@
   <div class="search-bar" [formGroup]="searchForm">
     <div class="search-fields">
       <div class="search-field">
-        <label for="status">Estado</label>
-        <input 
-          id="status"
-          type="text" 
-          pInputText 
-          formControlName="status"
-          placeholder="Ej: OPEN (Dentro del parqueadero), CLOSED (Cobrada)"
-        />
+        <app-select-lib formControlName="status" [options]="statusOptions" label="Estado" [filter]="false"
+          [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
       </div>
       <div class="search-field">
         <label for="companyCompanyId">ID Empresa</label>
-        <input 
-          id="companyCompanyId"
-          type="number" 
-          pInputText 
-          formControlName="companyCompanyId"
-          placeholder="ID de empresa"
-        />
+        <input id="companyCompanyId" type="number" pInputText formControlName="companyCompanyId"
+          placeholder="ID de empresa" />
       </div>
     </div>
     <div class="search-actions">
-      <p-button 
-        label="Buscar" 
-        icon="pi pi-search" 
-        (onClick)="search()" 
-        [disabled]="loading"
+      <p-button label="Buscar" icon="pi pi-search" (onClick)="search()" [disabled]="loading"
         styleClass="p-button-secondary">
       </p-button>
-      <p-button 
-        label="Limpiar" 
-        icon="pi pi-times" 
-        (onClick)="clearSearch()" 
-        [disabled]="loading"
+      <p-button label="Limpiar" icon="pi pi-times" (onClick)="clearSearch()" [disabled]="loading"
         styleClass="p-button-text">
       </p-button>
     </div>
   </div>
 
-  <p-message 
-    *ngIf="error" 
-    severity="error" 
-    [text]="error"
-    [closable]="true"
-    (onClose)="error = null">
+  <p-message *ngIf="error" severity="error" [text]="error" [closable]="true" (onClose)="error = null">
   </p-message>
 
   <div class="table-container">
-    <app-spinner 
-      [loading]="loading"
-      size="normal"
-      message="Cargando vehículos parqueados..."
-      [overlay]="true">
+    <app-spinner [loading]="loading" size="normal" message="Cargando vehículos parqueados..." [overlay]="true">
     </app-spinner>
-    
-    <app-table-lib
-      *ngIf="(tableData$ | async) as tableData"
-      [cols]="cols"
-      [dataTable]="tableData"
-      [hasEdit]="false"
-      [hasDelete]="false"
-      [hasDetail]="false"
-      [hasReport]="false"
-      (onEdit)="onTableEdit($event)"
-      (onDelete)="onTableDelete($event)"
-      (pagination)="onTablePagination($event)">
+
+    <app-table-lib *ngIf="(tableData$ | async) as tableData" [cols]="cols" [dataTable]="tableData" [hasEdit]="false"
+      [hasDelete]="false" [hasDetail]="false" [hasReport]="false" (onEdit)="onTableEdit($event)"
+      (onDelete)="onTableDelete($event)" (pagination)="onTablePagination($event)">
     </app-table-lib>
   </div>
 </div>
-

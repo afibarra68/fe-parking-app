@@ -1,15 +1,18 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { VehiculosParqueadosService, VehiculoParqueado, Page } from '../../../core/services/vehiculos-parqueados.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
+import { SelectItem } from 'primeng/api';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-vehiculos-parqueados',
@@ -26,17 +29,20 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
   templateUrl: './vehiculos-parqueados.component.html',
   styleUrls: ['./vehiculos-parqueados.component.scss']
 })
-export class VehiculosParqueadosComponent implements OnDestroy {
+export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
-  
+  statusOptions: SelectItem[] = [];
+
   // Paginación
   page: number = 0;
   size: number = environment.rowsPerPage || 10;
   first = 0;
-  
+
   private subscription?: Subscription;
-  
+  private statusSubscription?: Subscription;
+  private isInitialLoad = true;
+
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
     totalRecords: 0,
@@ -61,19 +67,49 @@ export class VehiculosParqueadosComponent implements OnDestroy {
 
   constructor(
     private vehiculosParqueadosService: VehiculosParqueadosService,
+    private enumService: EnumService,
     private fb: FormBuilder
   ) {
     this.searchForm = this.fb.group({
-      status: ['OPEN'],
+      status: [null],
       companyCompanyId: [null]
     });
-    // Los datos se cargarán cuando la tabla dispare onTablePagination
+  }
+
+  ngOnInit(): void {
+    // Cargar opciones de estado desde el backend
+    this.loadStatusOptions();
   }
 
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
+    if (this.statusSubscription) {
+      this.statusSubscription.unsubscribe();
+    }
+  }
+
+  private loadStatusOptions(): void {
+    this.statusSubscription = this.enumService.getEnumByName('EtransactionStatus')
+      .pipe(
+        catchError(() => of([] as EnumResource[]))
+      )
+      .subscribe({
+        next: (statuses: EnumResource[]) => {
+          this.statusOptions = statuses.map(status => ({
+            label: status.description,
+            value: status.id
+          }));
+          // Establecer valor por defecto si hay opciones
+          if (this.statusOptions.length > 0 && !this.searchForm.value.status) {
+            const openStatus = this.statusOptions.find(opt => opt.value === 'OPEN');
+            if (openStatus) {
+              this.searchForm.patchValue({ status: openStatus.value });
+            }
+          }
+        }
+      });
   }
 
   loadVehiculos(): void {
@@ -84,9 +120,15 @@ export class VehiculosParqueadosComponent implements OnDestroy {
     this.loading = true;
     this.error = null;
 
+    // Extraer el ID del status si es un objeto EnumResource
+    const statusValue = this.searchForm.value.status;
+    const statusId = typeof statusValue === 'object' && statusValue?.id
+      ? statusValue.id
+      : (typeof statusValue === 'string' ? statusValue : undefined);
+
     const filters: any = {};
-    if (this.searchForm.value.status) {
-      filters.status = this.searchForm.value.status;
+    if (statusId) {
+      filters.status = statusId;
     }
     if (this.searchForm.value.companyCompanyId) {
       filters.companyCompanyId = this.searchForm.value.companyCompanyId;
@@ -123,22 +165,34 @@ export class VehiculosParqueadosComponent implements OnDestroy {
   search(): void {
     this.page = 0;
     this.first = 0;
-    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
+    this.isInitialLoad = false; // Marcar que ya no es carga inicial
+    // Llamar directamente a loadVehiculos para forzar la recarga con los nuevos filtros
+    this.loadVehiculos();
   }
 
   clearSearch(): void {
+    // Establecer valor por defecto si hay opciones
+    const defaultStatus = this.statusOptions.find(opt => opt.value === 'OPEN')?.value || null;
     this.searchForm.reset({
-      status: 'OPEN',
+      status: defaultStatus,
       companyCompanyId: null
     });
     this.search();
   }
 
   onTablePagination(event: any): void {
-    this.page = event.page || 0;
-    this.size = event.rows || environment.rowsPerPage || 10;
-    this.first = event.first || 0;
-    this.loadVehiculos();
+    // Solo cargar si no es la carga inicial o si realmente cambió la paginación
+    const newPage = event.page || 0;
+    const newSize = event.rows || environment.rowsPerPage || 10;
+
+    // Si es la primera carga o cambió la página/tamaño, cargar datos
+    if (this.isInitialLoad || newPage !== this.page || newSize !== this.size) {
+      this.page = newPage;
+      this.size = newSize;
+      this.first = event.first || 0;
+      this.isInitialLoad = false;
+      this.loadVehiculos();
+    }
   }
 
   onTableEdit(row: any): void {
@@ -156,15 +210,26 @@ export class VehiculosParqueadosComponent implements OnDestroy {
    * OPEN -> "Dentro del parqueadero"
    * CLOSED -> "Cobrada"
    */
-  formatStatus(status: string | undefined): string {
+  formatStatus(status: EnumResource | string | undefined | null): string {
     if (!status) return '';
-    switch (status.toUpperCase()) {
+
+    // Si es un objeto EnumResource, usar description o id
+    let statusValue: string;
+    if (typeof status === 'object' && status !== null) {
+      statusValue = status.description || status.id || '';
+    } else {
+      statusValue = status;
+    }
+
+    if (!statusValue) return '';
+
+    switch (statusValue.toUpperCase()) {
       case 'OPEN':
         return 'Dentro del parqueadero';
       case 'CLOSED':
         return 'Cobrada';
       default:
-        return status;
+        return statusValue;
     }
   }
 }

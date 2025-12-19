@@ -5,6 +5,9 @@
     [class.hidden]="!showSidebar()"
     [class.with-sidebar]="showSidebar()"
     [class.sidebar-collapsed]="showSidebar() && sidebarCollapsed()">
+    @if (showSidebar()) {
+      <app-mobile-menu-button></app-mobile-menu-button>
+    }
     <app-user-control></app-user-control>
   </header>
   <div class="content-wrapper" [class.with-sidebar]="showSidebar()" [class.sidebar-collapsed]="sidebarCollapsed()">
@@ -12,4 +15,5 @@
       <router-outlet />
     </main>
   </div>
+  <p-confirmDialog></p-confirmDialog>
 </div>

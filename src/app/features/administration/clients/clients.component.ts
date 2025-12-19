@@ -2,6 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ClientService, Client, Page } from '../../../core/services/client.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -10,6 +11,7 @@ import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-clients',
@@ -62,6 +64,7 @@ export class ClientsComponent implements OnDestroy {
 
   constructor(
     private clientService: ClientService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -143,9 +146,17 @@ export class ClientsComponent implements OnDestroy {
   }
 
   onTableDelete(selected: any): void {
-    if (selected && confirm(`¿Está seguro de eliminar el cliente "${selected.fullName}"?`)) {
-      // Implementar lógica de eliminación si está disponible
-      this.error = 'La funcionalidad de eliminar no está disponible';
+    if (selected) {
+      const itemName = selected.fullName 
+        ? `el cliente "${selected.fullName}"`
+        : 'este cliente';
+      
+      this.confirmationService.confirmDelete(itemName)
+        .pipe(filter((confirmed: boolean) => confirmed))
+        .subscribe(() => {
+          // Implementar lógica de eliminación si está disponible
+          this.error = 'La funcionalidad de eliminar no está disponible';
+        });
     }
   }
 

@@ -3,6 +3,7 @@ import { provideRouter, withComponentInputBinding, withViewTransitions } from '@
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { providePrimeNG } from 'primeng/config';
+import { ConfirmationService as PrimeConfirmationService } from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
@@ -18,6 +19,7 @@ export const appConfig: ApplicationConfig = {
         preset: Aura
       }
     }),
+    PrimeConfirmationService,
     provideRouter(
       routes,
       withComponentInputBinding(), // Permite pasar datos del router directamente a los componentes

@@ -2,6 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { UserRoleService, UserRole, UserRolePageResponse, CreateUserRole } from '../../../core/services/user-role.service';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -11,6 +12,7 @@ import { TableColumn } from '../../../shared/components/table/table.component';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { SelectItem } from 'primeng/api';
+import { filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-user-roles',
@@ -64,6 +66,7 @@ export class UserRolesComponent implements OnDestroy {
 
   constructor(
     private userRoleService: UserRoleService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -171,20 +174,29 @@ export class UserRolesComponent implements OnDestroy {
   }
 
   onTableDelete(selected: any): void {
-    if (selected && confirm(`¿Está seguro de eliminar la relación de rol para el usuario "${selected.firstName} ${selected.lastName}"?`)) {
-      if (selected.userRoleId) {
-        this.loading = true;
-        this.userRoleService.delete(selected.userRoleId).subscribe({
+    if (selected && selected.userRoleId) {
+      const itemName = selected.firstName && selected.lastName 
+        ? `la relación de rol para el usuario "${selected.firstName} ${selected.lastName}"`
+        : 'esta relación';
+      
+      this.confirmationService.confirmDelete(itemName)
+        .pipe(
+          filter((confirmed: boolean) => confirmed),
+          switchMap(() => {
+            this.loading = true;
+            return this.userRoleService.delete(selected.userRoleId);
+          })
+        )
+        .subscribe({
           next: () => {
             this.loading = false;
             this.loadUserRoles();
           },
-          error: (err) => {
+          error: (err: any) => {
             this.error = err?.error?.message || 'Error al eliminar la relación usuario-rol';
             this.loading = false;
           }
         });
-      }
     }
   }
 
@@ -222,20 +234,39 @@ export class UserRolesComponent implements OnDestroy {
       role: this.form.value.role
     };
 
-    this.userRoleService.create(userRoleData).subscribe({
-      next: () => {
-        this.loading = false;
-        this.showForm = false;
-        this.editingUserRole = null;
-        this.form.reset();
-        this.loadUserRoles();
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Error al guardar la relación usuario-rol';
-        this.loading = false;
-        console.error('Error:', err);
-      }
-    });
+    if (this.editingUserRole && this.editingUserRole.userRoleId) {
+      // Actualizar relación existente
+      this.userRoleService.update(this.editingUserRole.userRoleId, userRoleData).subscribe({
+        next: () => {
+          this.loading = false;
+          this.showForm = false;
+          this.editingUserRole = null;
+          this.form.reset();
+          this.loadUserRoles();
+        },
+        error: (err) => {
+          this.error = err?.error?.message || 'Error al actualizar la relación usuario-rol';
+          this.loading = false;
+          console.error('Error:', err);
+        }
+      });
+    } else {
+      // Crear nueva relación
+      this.userRoleService.create(userRoleData).subscribe({
+        next: () => {
+          this.loading = false;
+          this.showForm = false;
+          this.editingUserRole = null;
+          this.form.reset();
+          this.loadUserRoles();
+        },
+        error: (err) => {
+          this.error = err?.error?.message || 'Error al guardar la relación usuario-rol';
+          this.loading = false;
+          console.error('Error:', err);
+        }
+      });
+    }
   }
 }
 

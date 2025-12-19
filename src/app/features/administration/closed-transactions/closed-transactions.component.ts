@@ -1,7 +1,8 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ClosedTransactionsService, ClosedTransaction, Page } from '../../../core/services/closed-transactions.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -9,8 +10,10 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
+import { SelectItem } from 'primeng/api';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-closed-transactions',
@@ -28,18 +31,20 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
   templateUrl: './closed-transactions.component.html',
   styleUrls: ['./closed-transactions.component.scss']
 })
-export class ClosedTransactionsComponent implements OnDestroy {
+export class ClosedTransactionsComponent implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
-  
+  statusOptions: SelectItem[] = [];
+
   // Paginación
   page: number = 0;
   size: number = environment.rowsPerPage || 10;
   first = 0;
-  
+
   private subscription?: Subscription;
-  private todayOnlySubscription?: Subscription;
-  
+  private statusSubscription?: Subscription;
+  private isInitialLoad = true;
+
   private tableDataSubject = new BehaviorSubject<any>({
     data: [],
     totalRecords: 0,
@@ -65,31 +70,50 @@ export class ClosedTransactionsComponent implements OnDestroy {
 
   constructor(
     private closedTransactionsService: ClosedTransactionsService,
+    private enumService: EnumService,
     private fb: FormBuilder
   ) {
     this.searchForm = this.fb.group({
-      status: ['CLOSED'],
+      status: [null],
       companyCompanyId: [null],
       todayOnly: [true] // Habilitado por defecto
     });
-    
-    // Recargar datos cuando cambie el checkbox
-    this.todayOnlySubscription = this.searchForm.get('todayOnly')?.valueChanges.subscribe(() => {
-      this.page = 0;
-      this.first = 0;
-      this.loadClosedTransactions();
-    });
-    
-    // Los datos se cargarán cuando la tabla dispare onTablePagination
+  }
+
+  ngOnInit(): void {
+    // Cargar opciones de estado desde el backend
+    this.loadStatusOptions();
   }
 
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
-    if (this.todayOnlySubscription) {
-      this.todayOnlySubscription.unsubscribe();
+    if (this.statusSubscription) {
+      this.statusSubscription.unsubscribe();
     }
+  }
+
+  private loadStatusOptions(): void {
+    this.statusSubscription = this.enumService.getEnumByName('EtransactionStatus')
+      .pipe(
+        catchError(() => of([] as EnumResource[]))
+      )
+      .subscribe({
+        next: (statuses: EnumResource[]) => {
+          this.statusOptions = statuses.map(status => ({
+            label: status.description,
+            value: status.id
+          }));
+          // Establecer valor por defecto si hay opciones
+          if (this.statusOptions.length > 0 && !this.searchForm.value.status) {
+            const closedStatus = this.statusOptions.find(opt => opt.value === 'CLOSED');
+            if (closedStatus) {
+              this.searchForm.patchValue({ status: closedStatus.value });
+            }
+          }
+        }
+      });
   }
 
   loadClosedTransactions(): void {
@@ -100,9 +124,15 @@ export class ClosedTransactionsComponent implements OnDestroy {
     this.loading = true;
     this.error = null;
 
+    // Extraer el ID del status si es un objeto EnumResource
+    const statusValue = this.searchForm.value.status;
+    const statusId = typeof statusValue === 'object' && statusValue?.id
+      ? statusValue.id
+      : (typeof statusValue === 'string' ? statusValue : undefined);
+
     const filters: any = {};
-    if (this.searchForm.value.status) {
-      filters.status = this.searchForm.value.status;
+    if (statusId) {
+      filters.status = statusId;
     }
     if (this.searchForm.value.companyCompanyId) {
       filters.companyCompanyId = this.searchForm.value.companyCompanyId;
@@ -149,12 +179,16 @@ export class ClosedTransactionsComponent implements OnDestroy {
   search(): void {
     this.page = 0;
     this.first = 0;
-    this.onTablePagination({ page: 0, first: 0, rows: this.size, pageCount: 0 });
+    this.isInitialLoad = false;
+    // Llamar directamente a loadClosedTransactions para forzar la recarga con los nuevos filtros
+    this.loadClosedTransactions();
   }
 
   clearSearch(): void {
+    // Establecer valor por defecto si hay opciones
+    const defaultStatus = this.statusOptions.find(opt => opt.value === 'CLOSED')?.value || null;
     this.searchForm.reset({
-      status: 'CLOSED',
+      status: defaultStatus,
       companyCompanyId: null,
       todayOnly: true // Mantener el checkbox marcado por defecto
     });
@@ -162,10 +196,18 @@ export class ClosedTransactionsComponent implements OnDestroy {
   }
 
   onTablePagination(event: any): void {
-    this.page = event.page || 0;
-    this.size = event.rows || environment.rowsPerPage || 10;
-    this.first = event.first || 0;
-    this.loadClosedTransactions();
+    // Solo cargar si no es la carga inicial o si realmente cambió la paginación
+    const newPage = event.page || 0;
+    const newSize = event.rows || environment.rowsPerPage || 10;
+
+    // Si es la primera carga o cambió la página/tamaño, cargar datos
+    if (this.isInitialLoad || newPage !== this.page || newSize !== this.size) {
+      this.page = newPage;
+      this.size = newSize;
+      this.first = event.first || 0;
+      this.isInitialLoad = false;
+      this.loadClosedTransactions();
+    }
   }
 
   onTableEdit(row: any): void {
@@ -181,14 +223,28 @@ export class ClosedTransactionsComponent implements OnDestroy {
   /**
    * Formatea el status para mostrar en la tabla
    * CLOSED -> "Cobrada"
+   * OPEN -> "Operación Abierta"
    */
-  formatStatus(status: string | undefined): string {
+  formatStatus(status: EnumResource | string | undefined | null): string {
     if (!status) return '';
-    switch (status.toUpperCase()) {
+
+    // Si es un objeto EnumResource, usar description o id
+    let statusValue: string;
+    if (typeof status === 'object' && status !== null) {
+      statusValue = status.description || status.id || '';
+    } else {
+      statusValue = status;
+    }
+
+    if (!statusValue) return '';
+
+    switch (statusValue.toUpperCase()) {
       case 'CLOSED':
         return 'Cobrada';
+      case 'OPEN':
+        return 'Operación Abierta';
       default:
-        return status;
+        return statusValue;
     }
   }
 
@@ -203,7 +259,7 @@ export class ClosedTransactionsComponent implements OnDestroy {
 
     // Obtener el locale del navegador o usar español por defecto
     const locale = navigator.language || 'es-ES';
-    
+
     // Si no hay código de moneda, usar formato por defecto con USD
     if (!currencyCode || currencyCode.trim() === '') {
       return new Intl.NumberFormat(locale, {
@@ -265,7 +321,7 @@ export class ClosedTransactionsComponent implements OnDestroy {
 
     const symbol = currencySymbols[currencyCode] || currencyCode;
     const formattedAmount = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
+
     // Formato: símbolo + espacio + monto (ej: "$ 1,234.56" o "€ 1,234.56")
     return `${symbol} ${formattedAmount}`;
   }

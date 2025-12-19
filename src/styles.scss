@@ -48,9 +48,19 @@
 html, body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
   height: 100%;
   width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+// En resoluciones pequeñas, permitir scroll completo
+@media (max-width: 768px) {
+  html, body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; // Scroll suave en iOS
+  }
 }
 
 body {
@@ -149,6 +159,76 @@ code, pre {
 .tracking-normal { letter-spacing: var(--letter-spacing-normal); }
 .tracking-wide { letter-spacing: var(--letter-spacing-wide); }
 .tracking-wider { letter-spacing: var(--letter-spacing-wider); }
+
+/* ============================================
+   CONFIGURACIÓN DE SCROLL PARA RESOLUCIONES PEQUEÑAS
+   ============================================ */
+
+// Asegurar que todos los contenedores de componentes permitan scroll en móviles
+@media (max-width: 768px) {
+  // Contenedores comunes de componentes
+  [class*="-container"],
+  [class*="-wrapper"] {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+  
+  // Evitar que los contenedores con height fijo bloqueen el scroll
+  [style*="height: 100vh"],
+  [style*="height:100vh"] {
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  
+  // Permitir scroll en elementos con overflow hidden que deberían permitirlo
+  .p-card,
+  .p-dialog-content,
+  .p-dialog-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: none !important;
+  }
+  
+  // SCROLL HORIZONTAL PARA TABLAS EN MÓVILES
+  .table-container,
+  [class*="table-container"] {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  // Estilos para tablas PrimeNG en móviles
+  .p-datatable-wrapper,
+  .p-datatable-scrollable-wrapper {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .p-datatable {
+    display: block;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    
+    table {
+      min-width: 600px; // Ancho mínimo para forzar scroll horizontal
+      width: 100%;
+    }
+  }
+  
+  .p-datatable-scrollable-body,
+  .p-datatable-scrollable-header {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
 /* ============================================
    ESTILOS DE BOTONES PRIMENG - TEMA ADMINISTRATIVO

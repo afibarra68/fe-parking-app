@@ -2,20 +2,22 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface BillingPrice {
   billingPriceId?: number;
-  status?: string;
+  status?: EnumResource | string | null; // Puede ser EnumResource, string (id) o null
   dateStartDisabled?: string;
   coverType?: string;
   applyDiscount?: boolean;
   discountDiscountId?: number;
   companyCompanyId?: number;
   businessServiceBusinessServiceId?: number;
-  start?: number;
-  end?: number;
+  start?: number; // DEPRECATED
+  end?: number; // DEPRECATED
+  hours?: number;
   mount?: number;
-  tipoVehiculo?: string;
+  tipoVehiculo?: EnumResource | string | null; // Puede ser EnumResource, string (id) o null
 }
 
 export interface BillingPricePageResponse {
@@ -38,7 +40,7 @@ export class BillingPriceService {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    
+
     if (filters?.status) {
       params = params.set('status', filters.status);
     }
@@ -48,7 +50,7 @@ export class BillingPriceService {
     if (filters?.tipoVehiculo) {
       params = params.set('tipoVehiculo', filters.tipoVehiculo);
     }
-    
+
     return this.http.get<BillingPricePageResponse>(`${this.apiUrl}/billing-prices/pageable`, { params });
   }
 
@@ -75,6 +77,11 @@ export class BillingPriceService {
   // Actualizar
   update(billingPrice: BillingPrice): Observable<BillingPrice> {
     return this.http.put<BillingPrice>(`${this.apiUrl}/billing-prices`, billingPrice);
+  }
+
+  // Eliminar
+  delete(billingPriceId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/billing-prices/${billingPriceId}`);
   }
 }
 

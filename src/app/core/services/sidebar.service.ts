@@ -10,6 +10,9 @@ import { Injectable, signal, computed } from '@angular/core';
 export class SidebarService {
   // Signal privado para el estado colapsado
   private readonly collapsedState = signal<boolean>(false);
+  
+  // Signal privado para el estado del menú móvil (abierto/cerrado)
+  private readonly mobileMenuOpenState = signal<boolean>(false);
 
   /**
    * ReadonlySignal que expone el estado colapsado del sidebar.
@@ -18,18 +21,37 @@ export class SidebarService {
   get collapsed() {
     return this.collapsedState.asReadonly();
   }
+  
+  /**
+   * ReadonlySignal que expone el estado del menú móvil.
+   */
+  get mobileMenuOpen() {
+    return this.mobileMenuOpenState.asReadonly();
+  }
 
   /**
    * Computed signal que indica si el sidebar está expandido.
    * Útil para lógica derivada en componentes.
    */
   readonly expanded = computed(() => !this.collapsedState());
+  
+  /**
+   * Computed signal que indica si el menú móvil está cerrado.
+   */
+  readonly mobileMenuClosed = computed(() => !this.mobileMenuOpenState());
 
   /**
    * Alterna el estado del sidebar entre colapsado y expandido.
    */
   toggle(): void {
     this.collapsedState.update(value => !value);
+  }
+  
+  /**
+   * Alterna el estado del menú móvil entre abierto y cerrado.
+   */
+  toggleMobileMenu(): void {
+    this.mobileMenuOpenState.update(value => !value);
   }
 
   /**
@@ -38,11 +60,25 @@ export class SidebarService {
   collapse(): void {
     this.collapsedState.set(true);
   }
+  
+  /**
+   * Cierra el menú móvil.
+   */
+  closeMobileMenu(): void {
+    this.mobileMenuOpenState.set(false);
+  }
 
   /**
    * Expande el sidebar.
    */
   expand(): void {
     this.collapsedState.set(false);
+  }
+  
+  /**
+   * Abre el menú móvil.
+   */
+  openMobileMenu(): void {
+    this.mobileMenuOpenState.set(true);
   }
 }

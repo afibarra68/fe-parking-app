@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface Page<T> {
   content: T[];
@@ -22,7 +23,7 @@ export interface VehiculoParqueado {
   endTime?: string | null;
   currency?: number;
   companyCompanyId?: number;
-  status?: string;
+  status?: EnumResource | string | null; // Puede ser EnumResource o string (id)
   billingPriceBillingPriceId?: number | null;
   amount?: number;
   discount?: string | null;
@@ -43,22 +44,22 @@ export class VehiculosParqueadosService {
 
   // Listar vehículos parqueados (transacciones abiertas) con paginación
   getPageable(
-    page: number, 
-    size: number, 
+    page: number,
+    size: number,
     filters?: { status?: string; companyCompanyId?: number }
   ): Observable<Page<VehiculoParqueado>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    
+
     if (filters?.status) {
       params = params.set('status', filters.status);
     }
-    
+
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
     }
-    
+
     return this.http.get<Page<VehiculoParqueado>>(`${this.apiUrl}/open-transactions`, { params });
   }
 

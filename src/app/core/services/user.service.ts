@@ -48,14 +48,14 @@ export class UserService {
 
   // Listar con paginación
   getPageable(
-    page: number, 
-    size: number, 
+    page: number,
+    size: number,
     filters?: { appUserId?: number; numberIdentity?: string; companyCompanyId?: number }
   ): Observable<UserPageResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-    
+
     if (filters?.appUserId) {
       params = params.set('appUserId', filters.appUserId.toString());
     }
@@ -65,13 +65,21 @@ export class UserService {
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
     }
-    
+
     return this.http.get<UserPageResponse>(`${this.apiUrl}/users/pageable`, { params });
   }
 
-  // Crear
+  // Crear (requiere autenticación)
   create(user: User): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/users/create_public_user`, user);
+    // No enviar password, se generará automáticamente basado en numberIdentity
+    const userData: any = { ...user };
+    delete userData.password; // No enviar password, se genera del documento
+    return this.http.post<any>(`${this.apiUrl}/users`, userData);
+  }
+
+  // Actualizar (requiere autenticación)
+  update(user: User): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/users`, user);
   }
 
   // Eliminar

@@ -1,0 +1,207 @@
+<div class="register-wrapper">
+  <div class="register-container">
+    <p-card class="register-card">
+      <ng-template pTemplate="header">
+        <div class="register-header">
+          <div class="register-image-container">
+            <img src="/images/vehicle-vector.png" alt="Vehículo" class="register-vehicle-image">
+          </div>
+          <h1>Crear Usuario</h1>
+          <p class="register-subtitle">Regístrate para acceder al sistema</p>
+        </div>
+      </ng-template>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="register-form">
+        <p-message 
+          *ngIf="error" 
+          severity="error" 
+          [text]="error"
+          [closable]="true"
+          (onClose)="error = null"
+          styleClass="register-error">
+        </p-message>
+
+        <p-message 
+          *ngIf="success" 
+          severity="success" 
+          [text]="success"
+          [closable]="true"
+          (onClose)="success = null"
+          styleClass="register-success">
+        </p-message>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="firstName" class="field-label">
+              Primer Nombre *
+            </label>
+            <input 
+              id="firstName"
+              type="text" 
+              pInputText 
+              formControlName="firstName"
+              placeholder="Primer nombre"
+              [class.ng-invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+              style="width: 100%;"
+            />
+            <small 
+              class="p-error" 
+              *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+              El primer nombre es requerido
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="secondName" class="field-label">
+              Segundo Nombre
+            </label>
+            <input 
+              id="secondName"
+              type="text" 
+              pInputText 
+              formControlName="secondName"
+              placeholder="Segundo nombre (opcional)"
+              style="width: 100%;"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="lastName" class="field-label">
+              Primer Apellido *
+            </label>
+            <input 
+              id="lastName"
+              type="text" 
+              pInputText 
+              formControlName="lastName"
+              placeholder="Primer apellido"
+              [class.ng-invalid]="form.get('lastName')?.invalid && form.get('lastName')?.touched"
+              style="width: 100%;"
+            />
+            <small 
+              class="p-error" 
+              *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+              El primer apellido es requerido
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="secondLastName" class="field-label">
+              Segundo Apellido
+            </label>
+            <input 
+              id="secondLastName"
+              type="text" 
+              pInputText 
+              formControlName="secondLastName"
+              placeholder="Segundo apellido (opcional)"
+              style="width: 100%;"
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="numberIdentity" class="field-label">
+            Número de Identidad *
+          </label>
+          <input 
+            id="numberIdentity"
+            type="text" 
+            pInputText 
+            formControlName="numberIdentity"
+            placeholder="Número de identidad"
+            [class.ng-invalid]="form.get('numberIdentity')?.invalid && form.get('numberIdentity')?.touched"
+            style="width: 100%;"
+          />
+          <small 
+            class="p-error" 
+            *ngIf="form.get('numberIdentity')?.invalid && form.get('numberIdentity')?.touched">
+            El número de identidad es requerido
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="phoneNumber" class="field-label">
+            Número de Teléfono
+          </label>
+          <input 
+            id="phoneNumber"
+            type="text" 
+            pInputText 
+            formControlName="phoneNumber"
+            placeholder="Número de teléfono (opcional)"
+            style="width: 100%;"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="password" class="field-label">
+            Contraseña *
+          </label>
+          <span class="p-input-icon-left" style="width: 100%;">
+            <p-password
+              id="password"
+              formControlName="password"
+              placeholder="Ingresa tu contraseña"
+              [toggleMask]="true"
+              [feedback]="false"
+              [class.ng-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+              styleClass="full-width"
+              inputStyleClass="full-width">
+            </p-password>
+          </span>
+          <small 
+            class="p-error" 
+            *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
+            <span *ngIf="form.get('password')?.errors?.['required']">La contraseña es requerida</span>
+            <span *ngIf="form.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="confirmPassword" class="field-label">
+            Confirmar Contraseña *
+          </label>
+          <span class="p-input-icon-left" style="width: 100%;">
+            <p-password
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              placeholder="Confirma tu contraseña"
+              [toggleMask]="true"
+              [feedback]="false"
+              [class.ng-invalid]="form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.touched"
+              styleClass="full-width"
+              inputStyleClass="full-width">
+            </p-password>
+          </span>
+          <small 
+            class="p-error" 
+            *ngIf="form.get('confirmPassword')?.invalid && form.get('confirmPassword')?.touched">
+            <span *ngIf="form.get('confirmPassword')?.errors?.['required']">La confirmación de contraseña es requerida</span>
+            <span *ngIf="form.get('confirmPassword')?.errors?.['passwordMismatch']">Las contraseñas no coinciden</span>
+          </small>
+        </div>
+
+        <div class="form-actions">
+          <p-button 
+            type="submit"
+            label="Crear Usuario" 
+            icon="pi pi-user-plus"
+            [disabled]="form.invalid || loading"
+            [loading]="loading"
+            styleClass="register-button">
+          </p-button>
+        </div>
+
+        <div class="form-footer">
+          <p>¿Ya tienes una cuenta? 
+            <a (click)="goToLogin()" class="login-link">Inicia sesión aquí</a>
+          </p>
+        </div>
+      </form>
+    </p-card>
+  </div>
+</div>
+

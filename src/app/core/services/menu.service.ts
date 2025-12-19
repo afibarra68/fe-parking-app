@@ -43,12 +43,6 @@ export class MenuService {
       visible: true
     },
     {
-      label: 'Tarifas',
-      icon: 'pi pi-dollar',
-      routerLink: '/administration/billing-prices',
-      visible: true
-    },
-    {
       label: 'Vehículos Parqueados',
       icon: 'pi pi-car',
       routerLink: '/administration/vehiculos-parqueados',
@@ -61,9 +55,50 @@ export class MenuService {
       visible: true
     },
     {
+      label: 'Configuración',
+      icon: 'pi pi-cog',
+      visible: true,
+      id: 'configuracion-menu',
+      expanded: false,
+      items: [
+        {
+          label: 'Administración Tarifas',
+          icon: 'pi pi-dollar',
+          routerLink: '/configuration/billing-prices',
+          visible: true
+        },
+        {
+          label: 'Impresoras',
+          icon: 'pi pi-print',
+          routerLink: '/configuration/printers',
+          visible: true
+        },
+        {
+          label: 'Plantillas de Tirilla',
+          icon: 'pi pi-file-edit',
+          routerLink: '/configuration/ticket-templates',
+          visible: true
+        },
+        {
+          label: 'Usuario - Impresora',
+          icon: 'pi pi-link',
+          routerLink: '/configuration/user-printers',
+          visible: true
+        },
+        {
+          label: 'Tipos de Impresora por Usuario',
+          icon: 'pi pi-shield',
+          routerLink: '/configuration/user-printer-types',
+          visible: true
+        }
+      ]
+    },
+    {
       label: 'Usuarios',
       icon: 'pi pi-user',
       visible: true,
+      id: 'usuarios-menu',
+      expanded: false, // Por defecto colapsado
       items: [
         {
           label: 'Gestión de Usuarios',
@@ -102,6 +137,85 @@ export class MenuService {
 
   clearMenu() {
     this.menuItems.set([]);
+  }
+
+  /**
+   * Agrega un sub-item a un item del menú existente
+   * @param parentId ID del item padre
+   * @param subItem Nuevo sub-item a agregar
+   */
+  addSubItem(parentId: string, subItem: MenuItem): void {
+    this.menuItems.update(items => {
+      return items.map(item => {
+        if (item.id === parentId) {
+          const updatedItems = item.items ? [...item.items, subItem] : [subItem];
+          return { ...item, items: updatedItems };
+        }
+        return item;
+      });
+    });
+  }
+
+  /**
+   * Remueve un sub-item de un item del menú
+   * @param parentId ID del item padre
+   * @param subItemLabel Label del sub-item a remover
+   */
+  removeSubItem(parentId: string, subItemLabel: string): void {
+    this.menuItems.update(items => {
+      return items.map(item => {
+        if (item.id === parentId && item.items) {
+          const updatedItems = item.items.filter(subItem => subItem.label !== subItemLabel);
+          return { ...item, items: updatedItems };
+        }
+        return item;
+      });
+    });
+  }
+
+  /**
+   * Toggle el estado expandido/colapsado de un item del menú
+   * @param itemId ID del item
+   */
+  toggleMenuItem(itemId: string): void {
+    this.menuItems.update(items => {
+      return items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, expanded: !item.expanded };
+        }
+        return item;
+      });
+    });
+  }
+
+  /**
+   * Expande un item del menú
+   * @param itemId ID del item
+   */
+  expandMenuItem(itemId: string): void {
+    this.menuItems.update(items => {
+      return items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, expanded: true };
+        }
+        return item;
+      });
+    });
+  }
+
+  /**
+   * Colapsa un item del menú
+   * @param itemId ID del item
+   */
+  collapseMenuItem(itemId: string): void {
+    this.menuItems.update(items => {
+      return items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, expanded: false };
+        }
+        return item;
+      });
+    });
   }
 }
 

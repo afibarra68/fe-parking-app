@@ -6,14 +6,9 @@
   <div class="search-bar" [formGroup]="searchForm">
     <div class="search-fields">
       <div class="search-field">
-        <label for="status">Estado</label>
-        <input 
-          id="status"
-          type="text" 
-          pInputText 
-          formControlName="status"
-          placeholder="Ej: CLOSED (Cobrada)"
-        />
+        <app-select-lib formControlName="status" [options]="statusOptions" label="Estado" [filter]="false"
+          [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
       </div>
       <div class="search-field">
         <label for="companyCompanyId">ID Empresa</label>

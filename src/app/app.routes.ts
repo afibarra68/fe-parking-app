@@ -19,6 +19,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/administration/administration-module').then(m => m.AdministrationModule),
   },
   {
+    path: 'configuration',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/configuration/configuration-module').then(m => m.ConfigurationModule),
+  },
+  {
     path: '**',
     redirectTo: '/administration/dashboard'
   }
