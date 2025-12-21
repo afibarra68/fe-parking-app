@@ -34,6 +34,9 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   error: string | null = null;
   statusOptions: SelectItem[] = [];
 
+  // Cache para mapeo rápido de tipoVehiculo
+  private tipoVehiculoMap = new Map<string, string>();
+
   // Paginación
   page: number = 0;
   size: number = environment.rowsPerPage || 10;
@@ -41,6 +44,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
 
   private subscription?: Subscription;
   private statusSubscription?: Subscription;
+  private tipoVehiculoSubscription?: Subscription;
   private isInitialLoad = true;
 
   private tableDataSubject = new BehaviorSubject<any>({
@@ -54,7 +58,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   cols: TableColumn[] = [
     { field: 'openTransactionId', header: 'ID', width: '80px' },
     { field: 'vehiclePlate', header: 'Placa', width: '120px' },
-    { field: 'tipoVehiculo', header: 'Tipo de Vehículo', width: '150px' },
+    { field: 'tipoVehiculoDisplay', header: 'Tipo de Vehículo', width: '150px' },
     { field: 'startDay', header: 'Fecha Inicio', width: '120px' },
     { field: 'startTime', header: 'Hora Inicio', width: '120px' },
     { field: 'statusDisplay', header: 'Estado', width: '150px' },
@@ -77,8 +81,9 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Cargar opciones de estado desde el backend
+    // Cargar opciones de estado y tipos de vehículo desde el backend
     this.loadStatusOptions();
+    this.loadTipoVehiculoOptions();
   }
 
   ngOnDestroy(): void {
@@ -87,6 +92,9 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
     }
     if (this.statusSubscription) {
       this.statusSubscription.unsubscribe();
+    }
+    if (this.tipoVehiculoSubscription) {
+      this.tipoVehiculoSubscription.unsubscribe();
     }
   }
 
@@ -108,6 +116,22 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
               this.searchForm.patchValue({ status: openStatus.value });
             }
           }
+        }
+      });
+  }
+
+  private loadTipoVehiculoOptions(): void {
+    this.tipoVehiculoSubscription = this.enumService.getEnumByName('ETipoVehiculo')
+      .pipe(
+        catchError(() => of([] as EnumResource[]))
+      )
+      .subscribe({
+        next: (tipos: EnumResource[]) => {
+          // Crear mapa para acceso rápido
+          this.tipoVehiculoMap.clear();
+          tipos.forEach(tipo => {
+            this.tipoVehiculoMap.set(tipo.id, tipo.description || tipo.id);
+          });
         }
       });
   }
@@ -138,10 +162,11 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       .getPageable(this.page, this.size, filters)
       .subscribe({
         next: (response: Page<VehiculoParqueado>) => {
-          // Formatear status para mostrar en la tabla
+          // Formatear status y tipoVehiculo para mostrar en la tabla
           const formattedData = (response.content || []).map(item => ({
             ...item,
-            statusDisplay: this.formatStatus(item.status)
+            statusDisplay: this.formatStatus(item.status),
+            tipoVehiculoDisplay: this.getTipoVehiculoDescription(item.tipoVehiculo)
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -231,6 +256,22 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       default:
         return statusValue;
     }
+  }
+
+  /**
+   * Obtiene la descripción del tipo de vehículo desde el mapa cacheado
+   */
+  getTipoVehiculoDescription(tipoVehiculo: string | EnumResource | null | undefined): string {
+    if (!tipoVehiculo) return '-';
+
+    // Si es un objeto EnumResource, usar description o id
+    if (typeof tipoVehiculo === 'object' && tipoVehiculo !== null) {
+      return tipoVehiculo.description || tipoVehiculo.id || '-';
+    }
+
+    // Si es string, buscar en el mapa
+    const tipoVehiculoId = tipoVehiculo;
+    return this.tipoVehiculoMap.get(tipoVehiculoId) || tipoVehiculoId || '-';
   }
 }
 

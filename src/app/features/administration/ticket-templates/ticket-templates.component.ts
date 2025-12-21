@@ -2,6 +2,8 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TicketTemplateService, TicketTemplate, TicketTemplatePageResponse } from '../../../core/services/ticket-template.service';
+import { PrinterService } from '../../../core/services/printer.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -42,24 +44,12 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
   private subscription?: Subscription;
 
   // Opciones para selects
-  printerTypes: SelectItem[] = [
-    { label: 'COM', value: 'COM' },
-    { label: 'WINDOWS', value: 'WINDOWS' },
-    { label: 'NETWORK', value: 'NETWORK' }
-  ];
-
-  ticketTypes: SelectItem[] = [
-    { label: 'INGRESO', value: 'INGRESO' },
-    { label: 'SALIDA', value: 'SALIDA' },
-    { label: 'FACTURA', value: 'FACTURA' },
-    { label: 'COMPROBANTE_INGRESO', value: 'COMPROBANTE_INGRESO' }
-  ];
+  ticketTypes: SelectItem[] = [];
 
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
     { field: 'ticketTemplateId', header: 'ID', width: '80px' },
-    { field: 'printerType', header: 'Tipo Impresora', width: '150px' },
-    { field: 'ticketType', header: 'Tipo Tirilla', width: '180px' },
+    { field: 'ticketTypeDisplay', header: 'Tipo Tirilla', width: '180px' },
     { field: 'template', header: 'Template', width: '200px' }
   ];
 
@@ -75,11 +65,12 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
 
   constructor(
     private ticketTemplateService: TicketTemplateService,
+    private printerService: PrinterService,
+    private enumService: EnumService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
       template: [''],
-      printerType: ['', [Validators.required]],
       ticketType: ['', [Validators.required]],
       invoice: [''],
       entryReceipt: [''],
@@ -88,13 +79,33 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     });
 
     this.searchForm = this.fb.group({
-      printerType: [''],
       ticketType: ['']
     });
   }
 
   ngOnInit(): void {
+    this.loadTicketTypes();
     this.loadTicketTemplates();
+  }
+
+  loadTicketTypes(): void {
+    this.enumService.getEnumByName('ETicketType').subscribe({
+      next: (types: EnumResource[]) => {
+        this.ticketTypes = types.map(type => ({
+          label: type.description || type.id,
+          value: type.id
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar tipos de tirilla:', err);
+        // Fallback a valores hardcodeados si falla
+        this.ticketTypes = [
+          { label: 'ENTRANCE', value: 'ENTRANCE' },
+          { label: 'LEAVING_PARKING', value: 'LEAVING_PARKING' },
+          { label: 'INVOICE_FINAL', value: 'INVOICE_FINAL' }
+        ];
+      }
+    });
   }
 
   loadTicketTemplates(): void {
@@ -106,15 +117,19 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     this.error = null;
     
     const filters: any = {
-      printerType: this.searchForm.value.printerType || undefined,
       ticketType: this.searchForm.value.ticketType || undefined
     };
     
     this.subscription = this.ticketTemplateService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: TicketTemplatePageResponse) => {
+          // Formatear ticketType para mostrar descripciones en la tabla
+          const formattedData = data.content.map(template => ({
+            ...template,
+            ticketTypeDisplay: this.getTicketTypeDisplay(template.ticketType)
+          }));
           this.tableDataSubject.next({
-            data: data.content,
+            data: formattedData,
             totalRecords: data.totalElements,
             isFirst: this.page === 0
           });
@@ -158,10 +173,15 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
 
   openEditForm(ticketTemplate: TicketTemplate): void {
     this.editingTicketTemplate = ticketTemplate;
+    
+    // Extraer el valor del ticketType (puede ser string o EnumResource)
+    const ticketTypeValue = typeof ticketTemplate.ticketType === 'string' 
+      ? ticketTemplate.ticketType 
+      : (ticketTemplate.ticketType as any)?.id || '';
+    
     this.form.patchValue({
       template: ticketTemplate.template || '',
-      printerType: ticketTemplate.printerType || '',
-      ticketType: ticketTemplate.ticketType || '',
+      ticketType: ticketTypeValue,
       invoice: ticketTemplate.invoice || '',
       entryReceipt: ticketTemplate.entryReceipt || '',
       companyCompanyId: ticketTemplate.companyCompanyId || null,
@@ -228,6 +248,17 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     this.size = event.rows || environment.rowsPerPage || 10;
     this.first = event.first || 0;
     this.loadTicketTemplates();
+  }
+
+  getTicketTypeDisplay(ticketType: string | EnumResource | undefined): string {
+    if (!ticketType) return '';
+    if (typeof ticketType === 'string') {
+      // Buscar la descripción en ticketTypes
+      const typeOption = this.ticketTypes.find(t => t.value === ticketType);
+      return typeOption?.label || ticketType;
+    }
+    // Si es EnumResource
+    return (ticketType as EnumResource).description || (ticketType as EnumResource).id || '';
   }
 }
 

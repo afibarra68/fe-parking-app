@@ -13,17 +13,6 @@
     <div class="search-fields">
       <div class="search-field">
         <app-select-lib
-          formControlName="printerType"
-          [options]="printerTypes"
-          label="Tipo Impresora"
-          [filter]="true"
-          [virtualScroll]="false"
-          [scrollHeight]="'200px'"
-          [appendTo]="'body'">
-        </app-select-lib>
-      </div>
-      <div class="search-field">
-        <app-select-lib
           formControlName="ticketType"
           [options]="ticketTypes"
           label="Tipo Tirilla"
@@ -71,23 +60,6 @@
     [contentStyle]="{overflow: 'auto', padding: '1rem'}"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">
-      <div class="form-group">
-        <app-select-lib
-          formControlName="printerType"
-          [options]="printerTypes"
-          label="Tipo de Impresora *"
-          [filter]="true"
-          [virtualScroll]="false"
-          [scrollHeight]="'200px'"
-          [appendTo]="'body'">
-        </app-select-lib>
-        <small 
-          class="p-error" 
-          *ngIf="form.get('printerType')?.invalid && form.get('printerType')?.touched">
-          El tipo de impresora es requerido
-        </small>
-      </div>
-
       <div class="form-group">
         <app-select-lib
           formControlName="ticketType"

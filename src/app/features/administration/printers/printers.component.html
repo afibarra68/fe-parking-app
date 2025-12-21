@@ -113,6 +113,23 @@
       </div>
 
       <div class="form-group">
+        <app-select-lib
+          formControlName="paperType"
+          [options]="paperTypes"
+          label="Tipo de Papel *"
+          [filter]="true"
+          [virtualScroll]="false"
+          [scrollHeight]="'200px'"
+          [appendTo]="'body'">
+        </app-select-lib>
+        <small 
+          class="p-error" 
+          *ngIf="form.get('paperType')?.invalid && form.get('paperType')?.touched">
+          El tipo de papel es requerido
+        </small>
+      </div>
+
+      <div class="form-group">
         <label for="connectionString">Cadena de Conexión *</label>
         <input 
           id="connectionString"

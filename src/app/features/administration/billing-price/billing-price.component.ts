@@ -319,10 +319,8 @@ export class BillingPriceComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          // Cerrar el modal inmediatamente sin esperar
           this.showForm.set(false);
           this.editingBillingPrice.set(null);
-          // Resetear formulario
           this.form.reset({
             applyDiscount: false,
             tipoVehiculo: null,
@@ -331,7 +329,6 @@ export class BillingPriceComponent implements OnInit {
           });
           this.form.markAsUntouched();
           this.form.markAsPristine();
-          // Recargar datos de forma asíncrona usando requestAnimationFrame para mejor rendimiento
           requestAnimationFrame(() => {
             this.loadBillingPrices();
           });
@@ -370,13 +367,10 @@ export class BillingPriceComponent implements OnInit {
 
   getTipoVehiculoDescription(tipoVehiculo: EnumResource | string | null | undefined): string {
     if (!tipoVehiculo) return '-';
-    // Si es un objeto EnumResource, usar description
     if (typeof tipoVehiculo === 'object' && tipoVehiculo.description) {
       return tipoVehiculo.description;
     }
-    // Si es string (id), buscar en el mapa
     const tipoVehiculoId = typeof tipoVehiculo === 'string' ? tipoVehiculo : tipoVehiculo?.id;
-    // Usar mapa cacheado para búsqueda O(1) en lugar de O(n)
     return this.tipoVehiculoMap.get(tipoVehiculoId || '') || tipoVehiculoId || '-';
   }
 
@@ -384,7 +378,6 @@ export class BillingPriceComponent implements OnInit {
     const companyId = event?.value;
     if (companyId) {
       this.loadBusinessServicesByCompany(companyId);
-      // Limpiar el servicio de negocio seleccionado cuando cambia la empresa
       this.form.patchValue({ businessServiceBusinessServiceId: null });
     } else {
       this.businessServiceOptions.set([]);

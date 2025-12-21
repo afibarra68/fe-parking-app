@@ -32,7 +32,7 @@ export interface VehiculoParqueado {
   operationDate?: string;
   serviceTypeServiceTypeId?: number | null;
   appUserAppUserSeller?: number | null;
-  tipoVehiculo?: string;
+  tipoVehiculo?: string | EnumResource;
 }
 
 @Injectable({

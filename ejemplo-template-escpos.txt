@@ -1,0 +1,4 @@
+Ejemplo de Template ESC/POS para Tirilla de Ingreso:
+
+\u001B@\u001Bd\u0002\u001Ba\u0001Ingreso parqueadero\n\u001Ba\u0001\u001B!\u0018{des_empresa}\n\u001B!\u0000\u001Ba\u0001NIT: {des_nit}\n\u001Ba\u0000Placa: {des_placa}\n\u001Bd\u0001\u001Ba\u0000Ingreso: {des_fecha}\n\u001Ba\u0000Hora: {des_hora_ingreso}\n\u001Bd\u0001\u001Ba\u0000Asesor: {des_vendedor}\n\u001Bd\u0001--------------------------------\n\u001Ba\u0000Tipo de vehículo: {des_tipo_vehiculo}\n\u001Ba\u0000Color: Gris\n\u001Ba\u0000Espacio asignado: {des_espacios}\n\u001Bd\u0001\u001Ba\u0000Tarifa por hora: $3.500\n\u001Ba\u0000Tiempo máximo: 12 horas\n\u001Ba\u0000Método de pago: Efectivo/Tarjeta\n\u001Bd\u0002\u001Ba\u0001\u001B!\u0008Gracias por su visita\n\u001B!\u0000\u001Ba\u0001Conserve este comprobante\n\u001Bd\u0003\u001DV\u0041
+
