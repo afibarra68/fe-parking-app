@@ -1,7 +1,8 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { UserService, User, UserPageResponse } from '../../../core/services/user.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,9 +10,10 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
+import { SelectItem } from 'primeng/api';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { filter, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { filter, switchMap, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-users',
@@ -28,11 +30,12 @@ import { filter, switchMap } from 'rxjs/operators';
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss']
 })
-export class UsersComponent implements OnDestroy {
+export class UsersComponent implements OnInit, OnDestroy {
   loading = false;
   showForm = false;
   editingUser: User | null = null;
   error: string | null = null;
+  accessCredentialOptions = signal<SelectItem[]>([]);
 
   // Paginación
   page: number = 0;
@@ -58,7 +61,7 @@ export class UsersComponent implements OnDestroy {
     { field: 'numberIdentity', header: 'Número Identidad', width: '150px' },
     { field: 'companyName', header: 'Empresa', width: '200px' },
     { field: 'processorId', header: 'ID Procesador', width: '150px' },
-    { field: 'accessLevel', header: 'Límite Acceso', width: '150px' }
+    { field: 'loginLimitDisplay', header: 'Límite Acceso', width: '150px' }
   ];
 
   form: FormGroup;
@@ -66,6 +69,7 @@ export class UsersComponent implements OnDestroy {
 
   constructor(
     private userService: UserService,
+    private enumService: EnumService,
     private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
@@ -77,7 +81,8 @@ export class UsersComponent implements OnDestroy {
       numberIdentity: ['', [Validators.required]],
       companyCompanyId: [null],
       processorId: [''],
-      accessCredential: ['']
+      accessCredential: [null],
+      loginLimit: [null]
     });
 
     this.searchForm = this.fb.group({
@@ -86,6 +91,26 @@ export class UsersComponent implements OnDestroy {
       companyCompanyId: [null]
     });
     // Los datos se cargarán cuando la tabla dispare onTablePagination
+  }
+
+  ngOnInit(): void {
+    this.loadAccessCredentialOptions();
+  }
+
+  private loadAccessCredentialOptions(): void {
+    this.enumService.getEnumByName('EAccessCredential')
+      .pipe(
+        catchError(() => of([] as EnumResource[]))
+      )
+      .subscribe({
+        next: (enums: EnumResource[]) => {
+          const options = enums.map(enumItem => ({
+            label: enumItem.description,
+            value: enumItem.id
+          }));
+          this.accessCredentialOptions.set(options);
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -117,8 +142,14 @@ export class UsersComponent implements OnDestroy {
     this.subscription = this.userService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: UserPageResponse) => {
+          // Formatear loginLimit para mostrar en la tabla
+          const formattedData = (data.content || []).map(user => ({
+            ...user,
+            loginLimitDisplay: this.formatLoginLimit(user.loginLimit)
+          }));
+
           this.tableDataSubject.next({
-            data: data.content || [],
+            data: formattedData,
             totalRecords: data.totalElements || 0,
             isFirst: this.page === 0
           });
@@ -134,6 +165,32 @@ export class UsersComponent implements OnDestroy {
           this.loading = false;
         }
       });
+  }
+
+  /**
+   * Formatea la fecha de loginLimit para mostrarla en la tabla
+   * @param loginLimit Fecha en formato string ISO (YYYY-MM-DD) o null/undefined
+   * @returns Fecha formateada como dd/MM/yyyy o '-' si no hay fecha
+   */
+  formatLoginLimit(loginLimit: string | null | undefined): string {
+    if (!loginLimit) {
+      return '-';
+    }
+
+    try {
+      const date = new Date(loginLimit);
+      if (isNaN(date.getTime())) {
+        return '-';
+      }
+
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return '-';
+    }
   }
 
   search(): void {
@@ -162,10 +219,10 @@ export class UsersComponent implements OnDestroy {
 
   onTableDelete(selected: any): void {
     if (selected && selected.numberIdentity) {
-      const itemName = selected.firstName && selected.lastName 
+      const itemName = selected.firstName && selected.lastName
         ? `el usuario "${selected.firstName} ${selected.lastName}"`
         : 'este usuario';
-      
+
       this.confirmationService.confirmDelete(itemName)
         .pipe(
           filter((confirmed: boolean) => confirmed),
@@ -195,6 +252,23 @@ export class UsersComponent implements OnDestroy {
 
   openEditForm(user: User): void {
     this.editingUser = user;
+
+    // Convertir loginLimit de string ISO a Date si existe
+    let loginLimitDate: Date | null = null;
+    if (user.loginLimit) {
+      loginLimitDate = new Date(user.loginLimit);
+    }
+
+    // Extraer el ID del accessCredential si es un objeto EnumResource
+    let accessCredentialValue: string | null = null;
+    if (user.accessCredential) {
+      if (typeof user.accessCredential === 'object' && 'id' in user.accessCredential) {
+        accessCredentialValue = (user.accessCredential as EnumResource).id;
+      } else {
+        accessCredentialValue = user.accessCredential as string;
+      }
+    }
+
     this.form.patchValue({
       firstName: user.firstName || '',
       secondName: user.secondName || '',
@@ -203,7 +277,8 @@ export class UsersComponent implements OnDestroy {
       numberIdentity: user.numberIdentity || '',
       companyCompanyId: user.companyCompanyId || null,
       processorId: user.processorId || '',
-      accessCredential: user.accessCredential || ''
+      accessCredential: accessCredentialValue,
+      loginLimit: loginLimitDate
     });
     this.showForm = true;
   }
@@ -222,6 +297,21 @@ export class UsersComponent implements OnDestroy {
     this.loading = true;
     this.error = null;
 
+    // Convertir loginLimit de Date a string ISO si existe
+    let loginLimitString: string | null = null;
+    if (this.form.value.loginLimit) {
+      const date = this.form.value.loginLimit as Date;
+      loginLimitString = date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    }
+
+    // Preparar accessCredential como objeto EnumResource con id
+    // El backend espera EnumResource con al menos el campo id
+    const accessCredentialValue = this.form.value.accessCredential;
+    const accessCredential: EnumResource | null | undefined = accessCredentialValue ? {
+      id: accessCredentialValue,
+      description: this.accessCredentialOptions().find(opt => opt.value === accessCredentialValue)?.label || accessCredentialValue
+    } : null;
+
     const userData: any = {
       firstName: this.form.value.firstName,
       secondName: this.form.value.secondName,
@@ -230,7 +320,8 @@ export class UsersComponent implements OnDestroy {
       numberIdentity: this.form.value.numberIdentity,
       companyCompanyId: this.form.value.companyCompanyId,
       processorId: this.form.value.processorId,
-      accessCredential: this.form.value.accessCredential
+      accessCredential: accessCredential,
+      loginLimit: loginLimitString
     };
 
     if (this.editingUser?.appUserId) {

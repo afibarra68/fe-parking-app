@@ -1,9 +1,4 @@
 <div class="about-container">
-  <div class="about-header">
-    <h1>Información de la Empresa</h1>
-    <p class="subtitle">Conoce más sobre nuestro sistema</p>
-  </div>
-
   @if (loading()) {
     <div class="loading-container">
       <p>Cargando información...</p>
@@ -54,12 +49,6 @@
             </div>
           </div>
         </div>
-
-        <ng-template pTemplate="footer">
-          <div class="card-footer">
-            <p>{{ companyInfo().copyright }}</p>
-          </div>
-        </ng-template>
       </p-card>
   </div>
   }

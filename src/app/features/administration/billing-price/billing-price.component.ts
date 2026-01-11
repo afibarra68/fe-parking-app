@@ -1,24 +1,24 @@
-import { Component, signal, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, signal, OnInit, DestroyRef, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BillingPriceService, BillingPrice, BillingPricePageResponse } from '../../../core/services/billing-price.service';
 import { CompanyService, Company } from '../../../core/services/company.service';
-import { TipoVehiculoService, TipoVehiculo } from '../../../core/services/tipo-vehiculo.service';
 import { CompanyBusinessServiceService, CompanyBusinessService } from '../../../core/services/company-business-service.service';
-import { EnumResource } from '../../../core/services/enum.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+// CalendarModule importado en SharedModule
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { SelectItem } from 'primeng/api';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, finalize, shareReplay } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-billing-price',
@@ -27,7 +27,6 @@ import { catchError, finalize, shareReplay } from 'rxjs/operators';
     CommonModule,
     ReactiveFormsModule,
     ButtonModule,
-    InputTextModule,
     InputNumberModule,
     CheckboxModule,
     DialogModule,
@@ -40,18 +39,18 @@ import { catchError, finalize, shareReplay } from 'rxjs/operators';
 export class BillingPriceComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
-  // Signals para mejor rendimiento y reactividad
+  // Signals
   loading = signal(false);
   showForm = signal(false);
   editingBillingPrice = signal<BillingPrice | null>(null);
   error = signal<string | null>(null);
+  submitted = signal(false);
   companyOptions = signal<SelectItem[]>([]);
-  tipoVehiculoOptions = signal<SelectItem[]>([]);
+  statusOptions = signal<SelectItem[]>([]);
+  vehicleTypeOptions = signal<SelectItem[]>([]);
+  basicVehicleTypeOptions = signal<SelectItem[]>([]);
   businessServiceOptions = signal<SelectItem[]>([]);
   currentCompanyId = signal<number | null>(null);
-
-  // Cache para mapeo rápido de tipoVehiculo
-  private tipoVehiculoMap = new Map<string, string>();
 
   // Paginación
   page = signal(0);
@@ -68,47 +67,69 @@ export class BillingPriceComponent implements OnInit {
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
     { field: 'billingPriceId', header: 'ID', width: '80px' },
-    { field: 'status', header: 'Estado', width: '120px' },
-    { field: 'coverType', header: 'Tipo de Cobertura', width: '150px' },
-    { field: 'tipoVehiculoDisplay', header: 'Tipo de Vehículo', width: '150px' },
-    { field: 'start', header: 'Inicio (horas)', width: '120px' },
-    { field: 'end', header: 'Fin (horas)', width: '120px' },
-    { field: 'mount', header: 'Valor por hora', width: '120px' },
-    { field: 'applyDiscount', header: 'Aplica Descuento', width: '150px' }
+    { field: 'statusDisplay', header: 'Estado', width: '120px' },
+    { field: 'easyCoverModeDisplay', header: 'Modo', width: '100px' },
+    { field: 'vehicleTypeDisplay', header: 'Tipo Vehículo', width: '150px' },
+    { field: 'basicVehicleTypeDisplay', header: 'Tipo Básico', width: '150px' },
+    { field: 'amountByHour', header: 'Precio/Hora', width: '120px' },
+    { field: 'dateStartDisabledDisplay', header: 'Fecha Deshabilitación', width: '150px' }
   ];
 
   form: FormGroup;
   searchForm: FormGroup;
 
+  // Computed para mostrar/ocultar campos según easyCoverMode
+  showVehicleType = computed(() => {
+    const easyMode = this.form.get('easyCoverMode')?.value;
+    return easyMode === false;
+  });
+
+  showBasicVehicleType = computed(() => {
+    const easyMode = this.form.get('easyCoverMode')?.value;
+    return easyMode === true;
+  });
+
   constructor(
     private billingPriceService: BillingPriceService,
     private companyService: CompanyService,
-    private tipoVehiculoService: TipoVehiculoService,
+    private notificationService: NotificationService,
     private companyBusinessServiceService: CompanyBusinessServiceService,
+    private enumService: EnumService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
-      status: [''],
-      coverType: [''],
-      applyDiscount: [false],
-      discountDiscountId: [null],
-      companyCompanyId: [null],
+      status: [null, Validators.required],
+      dateStartDisabled: [null],
+      companyCompanyId: [null, Validators.required],
       businessServiceBusinessServiceId: [null],
-      start: [null, [Validators.min(1)]],
-      end: [null, [Validators.min(1)]],
-      mount: [null, [Validators.min(0)]],
-      tipoVehiculo: [null]
+      amountByHour: [null, [Validators.required, Validators.min(0)]],
+      easyCoverMode: [false, Validators.required],
+      basicVehicleType: [null],
+      vehicleType: [null]
     });
 
     this.searchForm = this.fb.group({
       status: [''],
-      tipoVehiculo: [null],
       companyCompanyId: [null]
+    });
+
+    // Validación condicional según easyCoverMode
+    this.form.get('easyCoverMode')?.valueChanges.subscribe(easyMode => {
+      if (easyMode === true) {
+        this.form.get('basicVehicleType')?.setValidators([Validators.required]);
+        this.form.get('vehicleType')?.clearValidators();
+        this.form.get('vehicleType')?.setValue(null);
+      } else {
+        this.form.get('vehicleType')?.setValidators([Validators.required]);
+        this.form.get('basicVehicleType')?.clearValidators();
+        this.form.get('basicVehicleType')?.setValue(null);
+      }
+      this.form.get('basicVehicleType')?.updateValueAndValidity();
+      this.form.get('vehicleType')?.updateValueAndValidity();
     });
   }
 
   ngOnInit(): void {
-    // Cargar empresa del usuario logueado y luego las opciones
     this.loadCurrentUserCompany();
   }
 
@@ -122,10 +143,8 @@ export class BillingPriceComponent implements OnInit {
         next: (company) => {
           if (company?.companyId) {
             this.currentCompanyId.set(company.companyId);
-            // Cargar servicios de negocio de la empresa
             this.loadBusinessServicesByCompany(company.companyId);
           }
-          // Cargar opciones de forma paralela y optimizada
           this.loadOptions();
         }
       });
@@ -153,25 +172,28 @@ export class BillingPriceComponent implements OnInit {
   }
 
   private loadOptions(): void {
-    // Cargar opciones en paralelo para mejor rendimiento
     forkJoin({
       companies: this.companyService.getList().pipe(
         catchError(() => of([] as Company[]))
       ),
-      tiposVehiculo: this.tipoVehiculoService.getAll().pipe(
-        catchError(() => of([] as TipoVehiculo[]))
+      status: this.enumService.getEnumByName('EBillingStatus').pipe(
+        catchError(() => of([] as EnumResource[]))
+      ),
+      vehicleType: this.enumService.getEnumByName('ETipoVehiculo').pipe(
+        catchError(() => of([] as EnumResource[]))
+      ),
+      basicVehicleType: this.enumService.getEnumByName('EBasicTipoVehiculo').pipe(
+        catchError(() => of([] as EnumResource[]))
       )
     })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
-          // Cargar datos iniciales después de que las opciones estén listas
           this.loadBillingPrices();
         })
       )
       .subscribe({
-        next: ({ companies, tiposVehiculo }) => {
-          // Procesar companies
+        next: ({ companies, status, vehicleType, basicVehicleType }) => {
           this.companyOptions.set(
             (Array.isArray(companies) ? companies : []).map(company => ({
               label: company.companyName || '',
@@ -179,18 +201,26 @@ export class BillingPriceComponent implements OnInit {
             }))
           );
 
-          // Procesar tiposVehiculo y crear mapa para búsqueda rápida
-          const options = tiposVehiculo.map(tipo => ({
-            label: tipo.description,
-            value: tipo.id
-          }));
-          this.tipoVehiculoOptions.set(options);
+          this.statusOptions.set(
+            status.map(s => ({
+              label: s.description,
+              value: s.id
+            }))
+          );
 
-          // Crear mapa para búsqueda O(1) en lugar de O(n)
-          this.tipoVehiculoMap.clear();
-          tiposVehiculo.forEach(tipo => {
-            this.tipoVehiculoMap.set(tipo.id, tipo.description);
-          });
+          this.vehicleTypeOptions.set(
+            vehicleType.map(vt => ({
+              label: vt.description,
+              value: vt.id
+            }))
+          );
+
+          this.basicVehicleTypeOptions.set(
+            basicVehicleType.map(bvt => ({
+              label: bvt.description,
+              value: bvt.id
+            }))
+          );
         }
       });
   }
@@ -201,7 +231,6 @@ export class BillingPriceComponent implements OnInit {
 
     const filters = {
       status: this.searchForm.value.status?.trim() || undefined,
-      tipoVehiculo: this.searchForm.value.tipoVehiculo || undefined,
       companyCompanyId: this.searchForm.value.companyCompanyId || undefined
     };
 
@@ -212,12 +241,15 @@ export class BillingPriceComponent implements OnInit {
       )
       .subscribe({
         next: (data: BillingPricePageResponse) => {
-          // Formatear tipoVehiculo usando el mapa cacheado para mejor rendimiento
           const formattedData = data.content.map(item => ({
             ...item,
-            tipoVehiculoDisplay: this.getTipoVehiculoDescription(
-              item.tipoVehiculo as EnumResource | string | null | undefined
-            )
+            statusDisplay: this.getEnumDescription(item.status),
+            easyCoverModeDisplay: item.easyCoverMode ? 'Fácil' : 'Completo',
+            vehicleTypeDisplay: this.getEnumDescription(item.vehicleType),
+            basicVehicleTypeDisplay: this.getEnumDescription(item.basicVehicleType),
+            dateStartDisabledDisplay: item.dateStartDisabled
+              ? this.formatDate(item.dateStartDisabled)
+              : '-'
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -232,44 +264,39 @@ export class BillingPriceComponent implements OnInit {
   }
 
   openCreateForm(): void {
-    // Cerrar cualquier edición previa
     this.editingBillingPrice.set(null);
-    // Resetear formulario de forma eficiente
+    this.submitted.set(false);
     this.form.reset({
-      applyDiscount: false,
-      tipoVehiculo: null,
+      easyCoverMode: false,
       companyCompanyId: this.currentCompanyId(),
       businessServiceBusinessServiceId: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
-    // Abrir modal inmediatamente
     this.showForm.set(true);
   }
 
   onTableEdit(event: any): void {
-    // Establecer datos de edición
     this.editingBillingPrice.set(event);
-    // Cargar datos en el formulario
-    this.form.patchValue({
+
+    const formData: any = {
       billingPriceId: event.billingPriceId,
-      status: event.status || '',
-      coverType: event.coverType || '',
-      applyDiscount: event.applyDiscount || false,
-      discountDiscountId: event.discountDiscountId || null,
+      status: this.extractEnumId(event.status),
+      dateStartDisabled: event.dateStartDisabled ? new Date(event.dateStartDisabled) : null,
       companyCompanyId: event.companyCompanyId || null,
       businessServiceBusinessServiceId: event.businessServiceBusinessServiceId || null,
-      start: event.start || null,
-      end: event.end || null,
-      mount: event.mount || null,
-      tipoVehiculo: event.tipoVehiculo || null
-    });
+      amountByHour: event.amountByHour || null,
+      easyCoverMode: event.easyCoverMode ?? false,
+      basicVehicleType: this.extractEnumId(event.basicVehicleType),
+      vehicleType: this.extractEnumId(event.vehicleType)
+    };
 
-    // Si hay companyCompanyId, cargar servicios de negocio de esa empresa
+    this.form.patchValue(formData);
+    this.submitted.set(false);
+
     if (event.companyCompanyId) {
       this.loadBusinessServicesByCompany(event.companyCompanyId);
     }
-    // Abrir modal inmediatamente
     this.showForm.set(true);
   }
 
@@ -285,6 +312,7 @@ export class BillingPriceComponent implements OnInit {
   }
 
   submitForm(): void {
+    this.submitted.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -296,16 +324,20 @@ export class BillingPriceComponent implements OnInit {
     const formValue = this.form.value;
     const billingPrice: BillingPrice = {
       billingPriceId: this.editingBillingPrice()?.billingPriceId,
-      status: formValue.status || null,
-      coverType: formValue.coverType || null,
-      applyDiscount: formValue.applyDiscount || false,
-      discountDiscountId: formValue.discountDiscountId || null,
+      status: formValue.status ? { id: formValue.status, description: '' } : null,
+      dateStartDisabled: formValue.dateStartDisabled
+        ? this.formatDateForBackend(formValue.dateStartDisabled)
+        : undefined,
       companyCompanyId: formValue.companyCompanyId || null,
       businessServiceBusinessServiceId: formValue.businessServiceBusinessServiceId || null,
-      start: formValue.start || null,
-      end: formValue.end || null,
-      mount: formValue.mount || null,
-      tipoVehiculo: formValue.tipoVehiculo || null
+      amountByHour: formValue.amountByHour || null,
+      easyCoverMode: formValue.easyCoverMode ?? false,
+      basicVehicleType: formValue.basicVehicleType
+        ? { id: formValue.basicVehicleType, description: '' }
+        : null,
+      vehicleType: formValue.vehicleType
+        ? { id: formValue.vehicleType, description: '' }
+        : null
     };
 
     const operation = this.editingBillingPrice()
@@ -319,11 +351,11 @@ export class BillingPriceComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          this.submitted.set(false);
           this.showForm.set(false);
           this.editingBillingPrice.set(null);
           this.form.reset({
-            applyDiscount: false,
-            tipoVehiculo: null,
+            easyCoverMode: false,
             companyCompanyId: this.currentCompanyId(),
             businessServiceBusinessServiceId: null
           });
@@ -334,19 +366,25 @@ export class BillingPriceComponent implements OnInit {
           });
         },
         error: (err: any) => {
-          this.error.set(err?.error?.message || 'Error al guardar el precio');
+          // El interceptor ya maneja los errores 412 automáticamente
+          // Solo establecer el error local si no es 412 para mantener compatibilidad
+          if (err?.status !== 412) {
+            this.error.set(err?.error?.message || 'Error al guardar la tarifa');
+            this.notificationService.error(err?.error?.message || 'Error al guardar la tarifa');
+          } else {
+            // Para errores 412, solo limpiar el error local ya que la notificación ya se mostró
+            this.error.set(null);
+          }
         }
       });
   }
 
   cancelForm(): void {
-    // Cerrar el modal inmediatamente
     this.showForm.set(false);
     this.editingBillingPrice.set(null);
-    // Resetear formulario de forma eficiente
+    this.submitted.set(false);
     this.form.reset({
-      applyDiscount: false,
-      tipoVehiculo: null,
+      easyCoverMode: false,
       companyCompanyId: this.currentCompanyId(),
       businessServiceBusinessServiceId: null
     });
@@ -365,15 +403,6 @@ export class BillingPriceComponent implements OnInit {
     this.search();
   }
 
-  getTipoVehiculoDescription(tipoVehiculo: EnumResource | string | null | undefined): string {
-    if (!tipoVehiculo) return '-';
-    if (typeof tipoVehiculo === 'object' && tipoVehiculo.description) {
-      return tipoVehiculo.description;
-    }
-    const tipoVehiculoId = typeof tipoVehiculo === 'string' ? tipoVehiculo : tipoVehiculo?.id;
-    return this.tipoVehiculoMap.get(tipoVehiculoId || '') || tipoVehiculoId || '-';
-  }
-
   onCompanyChange(event: any): void {
     const companyId = event?.value;
     if (companyId) {
@@ -383,5 +412,43 @@ export class BillingPriceComponent implements OnInit {
       this.businessServiceOptions.set([]);
     }
   }
-}
 
+  private getEnumDescription(enumValue: EnumResource | string | null | undefined): string {
+    if (!enumValue) return '-';
+    if (typeof enumValue === 'object' && enumValue.description) {
+      return enumValue.description;
+    }
+    const id = typeof enumValue === 'string' ? enumValue : enumValue?.id;
+    // Buscar en las opciones cargadas
+    const statusOpt = this.statusOptions().find(opt => opt.value === id);
+    if (statusOpt?.label) return statusOpt.label;
+    const vehicleOpt = this.vehicleTypeOptions().find(opt => opt.value === id);
+    if (vehicleOpt?.label) return vehicleOpt.label;
+    const basicOpt = this.basicVehicleTypeOptions().find(opt => opt.value === id);
+    if (basicOpt?.label) return basicOpt.label;
+    return id || '-';
+  }
+
+  private extractEnumId(enumValue: EnumResource | string | null | undefined): string | null {
+    if (!enumValue) return null;
+    if (typeof enumValue === 'object' && enumValue.id) {
+      return enumValue.id;
+    }
+    return typeof enumValue === 'string' ? enumValue : null;
+  }
+
+  private formatDate(dateString: string): string {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+
+  private formatDateForBackend(date: Date | string): string {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}

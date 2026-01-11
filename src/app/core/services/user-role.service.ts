@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface Page<T> {
   content: T[];
@@ -16,14 +17,8 @@ export interface Page<T> {
 export interface UserRole {
   userRoleId?: number;
   appUserId?: number;
-  firstName?: string;
-  lastName?: string;
-  secondName?: string;
-  secondLastname?: string;
   numberIdentity?: string;
-  role?: string;
-  companyCompanyId?: number;
-  companyName?: string;
+  role?: EnumResource | string; // Puede ser EnumResource del backend o string (id)
 }
 
 export interface UserRolePageResponse {

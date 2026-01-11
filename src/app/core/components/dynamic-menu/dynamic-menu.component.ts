@@ -2,6 +2,7 @@ import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/c
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { MenuService } from '../../services/menu.service';
 import { SidebarService } from '../../services/sidebar.service';
+import { AuthService } from '../../services/auth.service';
 import { MenuItem } from '../../models/menu-item.model';
 import { filter } from 'rxjs/operators';
 
@@ -17,13 +18,71 @@ export class DynamicMenuComponent {
   private readonly menuService = inject(MenuService);
   private readonly sidebarService = inject(SidebarService);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  
+  // Roles permitidos para ver items restringidos (Países y Servicios de Negocio)
+  private readonly RESTRICTED_ITEMS_ALLOWED_ROLES = ['SUPER_USER', 'LEVEL_10_MULTI_ROLE', 'SUPER_ADMIN'];
+  
+  // Rol más alto - solo para acceso a Empresas
+  private readonly HIGHEST_ROLE = 'SUPER_USER';
   
   // Usar computed signal para derivar los items visibles del menú
   // Esto evita re-renderizados innecesarios y mantiene el componente estático
+  // Depende del signal de roles para reactividad
   readonly menuItems = computed(() => {
+    // Leer el signal de roles para hacer este computed reactivo
+    // Esto fuerza que el computed se recalcule cuando los roles cambien
+    const userRolesSignal = this.authService.getUserRoles();
+    const userRoles = userRolesSignal(); // Leer el valor del signal
+    
     const items = this.menuService.getMenuItems()();
-    return items.filter(item => item.visible !== false);
+    return items
+      .filter(item => {
+        // Filtrar por visible
+        if (item.visible === false) {
+          return false;
+        }
+        
+        // Filtrar "Empresas" - solo rol más alto (SUPER_USER)
+        if (item.label === 'Empresas') {
+          return this.hasHighestRoleAccess();
+        }
+        
+        // Filtrar "Países" y "Servicios de Negocio" basado en roles
+        if (item.label === 'Países' || item.label === 'Servicios de Negocio') {
+          return this.hasRestrictedAccess();
+        }
+        
+        return true;
+      })
+      .map(item => {
+        // Si tiene subitems, también filtrar los subitems
+        if (item.items && item.items.length > 0) {
+          return {
+            ...item,
+            items: item.items.filter(subItem => subItem.visible !== false)
+          };
+        }
+        return item;
+      });
   });
+  
+  /**
+   * Verifica si el usuario tiene acceso a items restringidos
+   * Solo usuarios con roles SUPER_USER, LEVEL_10_MULTI_ROLE o SUPER_ADMIN pueden acceder
+   * Aplica a: Países, Servicios de Negocio
+   */
+  private hasRestrictedAccess(): boolean {
+    return this.RESTRICTED_ITEMS_ALLOWED_ROLES.some(role => this.authService.hasRole(role));
+  }
+
+  /**
+   * Verifica si el usuario tiene el rol más alto (SUPER_USER)
+   * Solo para acceso a Empresas
+   */
+  private hasHighestRoleAccess(): boolean {
+    return this.authService.hasRole(this.HIGHEST_ROLE);
+  }
   
   // Exponer el estado colapsado del sidebar
   readonly collapsed = this.sidebarService.collapsed;

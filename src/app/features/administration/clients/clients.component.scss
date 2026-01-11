@@ -186,6 +186,22 @@
   }
 }
 
+.plates-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .plate-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    .plate-input {
+      flex: 1;
+    }
+  }
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

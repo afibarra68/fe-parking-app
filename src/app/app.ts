@@ -8,10 +8,11 @@ import { filter, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from './core/services/auth.service';
 import { SidebarService } from './core/services/sidebar.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastComponent } from './core/components/toast/toast.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarComponent, UserControlComponent, MobileMenuButtonComponent, CommonModule, ConfirmDialogModule],
+  imports: [RouterOutlet, SidebarComponent, UserControlComponent, MobileMenuButtonComponent, CommonModule, ConfirmDialogModule, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

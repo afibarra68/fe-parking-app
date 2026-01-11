@@ -1,0 +1,76 @@
+<div class="subscription-history-status-container">
+  <div class="header">
+    <h1>Historial de Suscripciones</h1>
+  </div>
+
+  <div class="search-bar" [formGroup]="searchForm">
+    <div class="search-fields">
+      <div class="search-field">
+        <label for="clientId">ID Cliente</label>
+        <input
+          id="clientId"
+          type="number"
+          pInputText
+          formControlName="clientId"
+          placeholder="Buscar por ID de cliente..."
+        />
+      </div>
+      <div class="search-field">
+        <label for="numberIdentity">Número de Identidad</label>
+        <input
+          id="numberIdentity"
+          type="text"
+          pInputText
+          formControlName="numberIdentity"
+          placeholder="Buscar por número de identidad..."
+          (keyup.enter)="search()"
+        />
+      </div>
+    </div>
+    <div class="search-actions">
+      <p-button
+        label="Buscar"
+        icon="pi pi-search"
+        (onClick)="search()"
+        [disabled]="loading"
+        styleClass="p-button-secondary">
+      </p-button>
+      <p-button
+        label="Limpiar"
+        icon="pi pi-times"
+        (onClick)="clearSearch()"
+        [disabled]="loading"
+        styleClass="p-button-text">
+      </p-button>
+    </div>
+  </div>
+
+  <p-message
+    *ngIf="error"
+    severity="error"
+    [text]="error"
+    [closable]="true"
+    (onClose)="error = null">
+  </p-message>
+
+  <div class="table-container">
+    <app-spinner
+      [loading]="loading"
+      size="normal"
+      message="Cargando historial de suscripciones..."
+      [overlay]="true">
+    </app-spinner>
+
+    <app-table-lib
+      *ngIf="(tableData$ | async) as tableData"
+      [cols]="cols"
+      [dataTable]="tableData"
+      [hasEdit]="true"
+      [hasDelete]="false"
+      [hasDetail]="false"
+      [hasReport]="false"
+      (onEdit)="onTableLiquidate($event)"
+      (pagination)="onTablePagination($event)">
+    </app-table-lib>
+  </div>
+</div>

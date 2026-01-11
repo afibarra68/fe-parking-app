@@ -71,6 +71,8 @@
     [closable]="true"
     [draggable]="false"
     [resizable]="false"
+    [dismissableMask]="true"
+    [closeOnEscape]="true"
     [contentStyle]="{overflow: 'visible', padding: '1rem'}"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">

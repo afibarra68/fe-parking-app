@@ -12,6 +12,7 @@ import { UsersComponent } from './users/users.component';
 import { UserRolesComponent } from './user-roles/user-roles.component';
 import { AboutComponent } from './about/about.component';
 import { AboutRolesComponent } from './about-roles/about-roles.component';
+import { SubscriptionHistoryStatusComponent } from './subscription-history-status/subscription-history-status.component';
 
 const routes: Routes = [
   {
@@ -29,6 +30,10 @@ const routes: Routes = [
   {
     path: 'clients',
     component: ClientsComponent
+  },
+  {
+    path: 'subscription-history-status',
+    component: SubscriptionHistoryStatusComponent
   },
   {
     path: 'business-service',

@@ -11,6 +11,7 @@ import { CompanyBusinessServiceComponent } from './company-business-service/comp
 import { VehiculosParqueadosComponent } from './vehiculos-parqueados/vehiculos-parqueados.component';
 import { ClosedTransactionsComponent } from './closed-transactions/closed-transactions.component';
 import { AboutComponent } from './about/about.component';
+import { SubscriptionHistoryStatusComponent } from './subscription-history-status/subscription-history-status.component';
 import { SharedModule } from '../../shared/shared-module';
 
 
@@ -28,6 +29,7 @@ import { SharedModule } from '../../shared/shared-module';
     VehiculosParqueadosComponent,
     ClosedTransactionsComponent,
     AboutComponent,
+    SubscriptionHistoryStatusComponent,
     SharedModule
   ],
   exports: [

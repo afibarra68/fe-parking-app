@@ -1,7 +1,8 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { UserRoleService, UserRole, UserRolePageResponse, CreateUserRole } from '../../../core/services/user-role.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -10,9 +11,9 @@ import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
 import { SelectItem } from 'primeng/api';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, switchMap, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-user-roles',
@@ -29,7 +30,7 @@ import { filter, switchMap } from 'rxjs/operators';
   templateUrl: './user-roles.component.html',
   styleUrls: ['./user-roles.component.scss']
 })
-export class UserRolesComponent implements OnDestroy {
+export class UserRolesComponent implements OnInit, OnDestroy {
   loading = false;
   showForm = false;
   editingUserRole: UserRole | null = null;
@@ -54,11 +55,9 @@ export class UserRolesComponent implements OnDestroy {
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
     { field: 'userRoleId', header: 'ID', width: '80px' },
+    { field: 'appUserId', header: 'ID Usuario', width: '120px' },
     { field: 'numberIdentity', header: 'Número Identidad', width: '150px' },
-    { field: 'firstName', header: 'Nombre', width: '120px' },
-    { field: 'lastName', header: 'Apellido', width: '120px' },
-    { field: 'role', header: 'Rol', width: '150px' },
-    { field: 'companyName', header: 'Empresa', width: '200px' }
+    { field: 'roleDisplay', header: 'Rol', width: '250px' }
   ];
 
   form: FormGroup;
@@ -66,6 +65,7 @@ export class UserRolesComponent implements OnDestroy {
 
   constructor(
     private userRoleService: UserRoleService,
+    private enumService: EnumService,
     private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
@@ -79,7 +79,10 @@ export class UserRolesComponent implements OnDestroy {
       numberIdentity: [''],
       role: ['']
     });
-    // Cargar roles inicialmente (las relaciones se cargarán cuando la tabla dispare onTablePagination)
+  }
+
+  ngOnInit(): void {
+    // Cargar roles desde el servicio genérico de enumeradores
     this.loadRoles();
   }
 
@@ -94,18 +97,22 @@ export class UserRolesComponent implements OnDestroy {
   }
 
   loadRoles(): void {
-    this.rolesSubscription = this.userRoleService.getRoles().subscribe({
-      next: (rolesList) => {
-        this.roles = rolesList.map(role => ({
-          label: role,
-          value: role
-        }));
-      },
-      error: (err) => {
-        console.error('Error al cargar roles:', err);
-        this.roles = [];
-      }
-    });
+    this.rolesSubscription = this.enumService.getEnumByName('ERole')
+      .pipe(
+        catchError(() => of([] as EnumResource[]))
+      )
+      .subscribe({
+        next: (rolesList: EnumResource[]) => {
+          this.roles = rolesList.map(role => ({
+            label: role.description,
+            value: role.id
+          }));
+        },
+        error: (err) => {
+          console.error('Error al cargar roles:', err);
+          this.roles = [];
+        }
+      });
   }
 
   loadUserRoles(): void {
@@ -130,8 +137,14 @@ export class UserRolesComponent implements OnDestroy {
     this.subscription = this.userRoleService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: UserRolePageResponse) => {
+          // Formatear role para mostrar en la tabla
+          const formattedData = (data.content || []).map(userRole => ({
+            ...userRole,
+            roleDisplay: this.getRoleDescription(userRole.role)
+          }));
+          
           this.tableDataSubject.next({
-            data: data.content || [],
+            data: formattedData,
             totalRecords: data.totalElements || 0,
             isFirst: this.page === 0
           });
@@ -173,10 +186,27 @@ export class UserRolesComponent implements OnDestroy {
     }
   }
 
+  /**
+   * Obtiene la descripción del rol para mostrar en la tabla
+   * @param role Rol que puede ser EnumResource o string
+   * @returns Descripción del rol o '-' si no hay rol
+   */
+  getRoleDescription(role: EnumResource | string | null | undefined): string {
+    if (!role) {
+      return '-';
+    }
+    
+    if (typeof role === 'object' && 'description' in role) {
+      return role.description || role.id || '-';
+    }
+    
+    return role || '-';
+  }
+
   onTableDelete(selected: any): void {
     if (selected && selected.userRoleId) {
-      const itemName = selected.firstName && selected.lastName 
-        ? `la relación de rol para el usuario "${selected.firstName} ${selected.lastName}"`
+      const itemName = selected.numberIdentity 
+        ? `la relación de rol para el usuario con identidad "${selected.numberIdentity}"`
         : 'esta relación';
       
       this.confirmationService.confirmDelete(itemName)
@@ -208,9 +238,20 @@ export class UserRolesComponent implements OnDestroy {
 
   openEditForm(userRole: UserRole): void {
     this.editingUserRole = userRole;
+    
+    // Extraer el ID del role si es un objeto EnumResource
+    let roleValue: string = '';
+    if (userRole.role) {
+      if (typeof userRole.role === 'object' && 'id' in userRole.role) {
+        roleValue = (userRole.role as EnumResource).id;
+      } else {
+        roleValue = userRole.role as string;
+      }
+    }
+    
     this.form.patchValue({
       numberIdentity: userRole.numberIdentity || '',
-      role: userRole.role || ''
+      role: roleValue
     });
     this.showForm = true;
   }
