@@ -31,9 +31,27 @@ export interface UserRolePageResponse {
   last: boolean;
 }
 
-export interface CreateUserRole {
-  numberIdentity: string;
-  role: string;
+export interface DUser {
+  appUserId?: number;
+  firstName?: string;
+  secondName?: string;
+  lastName?: string;
+  secondLastName?: string;
+  numberIdentity: string; // Required
+  sha?: string;
+  password?: string;
+  phoneNumber?: string;
+  salt?: string;
+  accessCredential?: EnumResource;
+  loginLimit?: string;
+  companyCompanyId?: number;
+  processorId?: string;
+}
+
+export interface DUserRole {
+  userRoleId?: number;
+  user: DUser; // Required
+  role: EnumResource; // Required
 }
 
 @Injectable({
@@ -67,13 +85,13 @@ export class UserRoleService {
   }
 
   // Crear relación usuario-rol
-  create(userRole: CreateUserRole): Observable<void> {
+  create(userRole: DUserRole): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/user_role`, userRole);
   }
 
   // Actualizar relación usuario-rol
-  update(userRoleId: number, userRole: CreateUserRole): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/user_role/${userRoleId}`, userRole);
+  update(userRole: DUserRole): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/user_role`, userRole);
   }
 
   // Eliminar relación usuario-rol

@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { TicketTemplateService, TicketTemplate, TicketTemplatePageResponse } from '../../../core/services/ticket-template.service';
@@ -74,7 +74,8 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     private printerService: PrinterService,
     private enumService: EnumService,
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       printerPrinterId: [null], // Relación con la impresora
@@ -224,17 +225,23 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
       companyCompanyId: companyId || undefined
     }).subscribe({
       next: (printers: Printer[]) => {
-        this.printers = printers;
-        this.printerOptions = printers
+        console.log('Impresoras recibidas del servicio:', printers);
+        this.printers = printers || [];
+        this.printerOptions = (printers || [])
           .filter(p => p.isActive !== false)
           .map(p => ({
-            label: `${p.printerName} (${p.connectionString || 'N/A'})`,
+            label: `${p.printerName || 'Sin nombre'} (${p.connectionString || 'N/A'})`,
             value: p.printerId
           }));
+        console.log('Opciones de impresoras mapeadas:', this.printerOptions);
+        // Forzar detección de cambios para actualizar el selector
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         console.error('Error al cargar impresoras:', err);
         this.printerOptions = [];
+        this.printers = [];
+        this.cdr.detectChanges();
       }
     });
   }
@@ -256,7 +263,10 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     // Deshabilitar paperSize (se establecerá automáticamente cuando se seleccione una impresora)
     this.form.get('paperSize')?.setValue(null, { emitEvent: false });
     this.form.get('paperSize')?.disable();
-    this.printerOptions = []; // Limpiar opciones de impresoras
+    // Asegurar que las impresoras estén cargadas antes de abrir el modal
+    if (this.printerOptions.length === 0) {
+      this.loadPrinters();
+    }
     this.showForm = true;
   }
 
@@ -268,14 +278,11 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
       ? ticketTemplate.ticketType
       : (ticketTemplate.ticketType as any)?.id || '';
 
-    // Cargar impresoras para asegurar que estén disponibles
-    this.loadPrinters();
-
     // Deshabilitar paperSize
     this.form.get('paperSize')?.disable();
 
-    // Esperar a que se carguen las impresoras antes de establecer los valores
-    setTimeout(() => {
+    // Función para establecer los valores del formulario
+    const setFormValues = () => {
       this.form.patchValue({
         ticketType: ticketTypeValue,
         template: ticketTemplate.template || '',
@@ -300,9 +307,21 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
           }
         }
       }
-    }, 500);
+    };
 
-    this.showForm = true;
+    // Si ya hay opciones cargadas, establecer valores inmediatamente
+    if (this.printerOptions.length > 0) {
+      setFormValues();
+      this.showForm = true;
+    } else {
+      // Cargar impresoras y esperar a que se completen antes de establecer valores
+      this.loadPrinters();
+      // Esperar un momento para que se complete la suscripción
+      setTimeout(() => {
+        setFormValues();
+        this.showForm = true;
+      }, 300);
+    }
   }
 
   cancelForm(): void {
@@ -312,7 +331,6 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     // Mantener deshabilitado (se establecerá automáticamente cuando se seleccione una impresora)
     this.form.get('paperSize')?.setValue(null, { emitEvent: false });
     this.form.get('paperSize')?.disable();
-    this.printerOptions = []; // Limpiar opciones de impresoras
   }
 
   submitForm(): void {

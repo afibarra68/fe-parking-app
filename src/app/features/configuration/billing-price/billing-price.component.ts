@@ -398,33 +398,27 @@ export class BillingPriceComponent implements OnInit {
 
     const formValue = this.form.value;
 
-    // Preparar status como objeto EnumResource con id
+    // Extraer solo el id como string para status
     const statusValue = formValue.status;
-    const status: EnumResource | null | undefined = statusValue ? {
-      id: typeof statusValue === 'string' ? statusValue : (statusValue.id || statusValue),
-      description: typeof statusValue === 'object' ? (statusValue.description || '') : '',
-      descriptionExtended: typeof statusValue === 'object' ? (statusValue.descriptionExtended || '') : ''
-    } : (statusValue === null ? null : undefined);
+    const status: string | null = statusValue
+      ? (typeof statusValue === 'string' ? statusValue : (statusValue.id || statusValue))
+      : null;
 
-    // Preparar vehicleType o basicVehicleType según easyCoverMode
+    // Preparar vehicleType o basicVehicleType según easyCoverMode (solo el id como string)
     const easyCoverMode = formValue.easyCoverMode ?? false;
-    let vehicleType: EnumResource | null | undefined = null;
-    let basicVehicleType: EnumResource | null | undefined = null;
+    let vehicleType: string | null = null;
+    let basicVehicleType: string | null = null;
 
     if (easyCoverMode) {
       const basicVehicleTypeValue = formValue.basicVehicleType;
-      basicVehicleType = basicVehicleTypeValue ? {
-        id: typeof basicVehicleTypeValue === 'string' ? basicVehicleTypeValue : (basicVehicleTypeValue.id || basicVehicleTypeValue),
-        description: typeof basicVehicleTypeValue === 'object' ? (basicVehicleTypeValue.description || '') : '',
-        descriptionExtended: typeof basicVehicleTypeValue === 'object' ? (basicVehicleTypeValue.descriptionExtended || '') : ''
-      } : null;
+      basicVehicleType = basicVehicleTypeValue
+        ? (typeof basicVehicleTypeValue === 'string' ? basicVehicleTypeValue : (basicVehicleTypeValue.id || basicVehicleTypeValue))
+        : null;
     } else {
       const vehicleTypeValue = formValue.vehicleType;
-      vehicleType = vehicleTypeValue ? {
-        id: typeof vehicleTypeValue === 'string' ? vehicleTypeValue : (vehicleTypeValue.id || vehicleTypeValue),
-        description: typeof vehicleTypeValue === 'object' ? (vehicleTypeValue.description || '') : '',
-        descriptionExtended: typeof vehicleTypeValue === 'object' ? (vehicleTypeValue.descriptionExtended || '') : ''
-      } : null;
+      vehicleType = vehicleTypeValue
+        ? (typeof vehicleTypeValue === 'string' ? vehicleTypeValue : (vehicleTypeValue.id || vehicleTypeValue))
+        : null;
     }
 
     const billingPrice: BillingPrice = {

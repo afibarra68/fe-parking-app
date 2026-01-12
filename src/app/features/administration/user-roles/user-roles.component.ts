@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { UserRoleService, UserRole, UserRolePageResponse, CreateUserRole } from '../../../core/services/user-role.service';
+import { UserRoleService, UserRole, UserRolePageResponse, DUserRole, DUser } from '../../../core/services/user-role.service';
 import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
@@ -270,14 +270,39 @@ export class UserRolesComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    const userRoleData: CreateUserRole = {
-      numberIdentity: this.form.value.numberIdentity,
-      role: this.form.value.role
+    // Construir el objeto DUser con numberIdentity
+    const user: DUser = {
+      numberIdentity: this.form.value.numberIdentity
     };
+
+    // Si estamos editando y tenemos appUserId, incluirlo
+    if (this.editingUserRole && this.editingUserRole.appUserId) {
+      user.appUserId = this.editingUserRole.appUserId;
+    }
+
+    // Obtener el EnumResource del rol seleccionado
+    const selectedRoleId = this.form.value.role;
+    const selectedRole = this.roles.find(r => r.value === selectedRoleId);
+    
+    // Construir EnumResource para el rol
+    const roleEnumResource: EnumResource = selectedRole 
+      ? { id: selectedRole.value as string, description: selectedRole.label || selectedRole.value as string }
+      : { id: selectedRoleId, description: selectedRoleId };
+
+    // Construir el objeto DUserRole según el contexto del controller
+    const userRoleData: DUserRole = {
+      user: user, // @NotNull
+      role: roleEnumResource // @NotNull
+    };
+
+    // Si estamos editando, incluir el userRoleId
+    if (this.editingUserRole && this.editingUserRole.userRoleId) {
+      userRoleData.userRoleId = this.editingUserRole.userRoleId;
+    }
 
     if (this.editingUserRole && this.editingUserRole.userRoleId) {
       // Actualizar relación existente
-      this.userRoleService.update(this.editingUserRole.userRoleId, userRoleData).subscribe({
+      this.userRoleService.update(userRoleData).subscribe({
         next: () => {
           this.loading = false;
           this.showForm = false;

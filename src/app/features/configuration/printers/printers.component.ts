@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { PrinterService, Printer, PrinterPageResponse } from '../../../core/services/printer.service';
 import { EnumService, EnumResource } from '../../../core/services/enum.service';
+import { CompanyService, Company } from '../../../core/services/company.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -43,10 +44,12 @@ export class PrintersComponent implements OnInit, OnDestroy {
   first = 0;
   
   private subscription?: Subscription;
+  private companiesSubscription?: Subscription;
 
   // Opciones para selects
   printerTypes: SelectItem[] = [];
   paperTypes: SelectItem[] = [];
+  companyOptions: SelectItem[] = [];
 
   statusOptions: SelectItem[] = [
     { label: 'Activo', value: true },
@@ -76,6 +79,7 @@ export class PrintersComponent implements OnInit, OnDestroy {
   constructor(
     private printerService: PrinterService,
     private enumService: EnumService,
+    private companyService: CompanyService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -98,6 +102,7 @@ export class PrintersComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadPrinterTypes();
     this.loadPaperTypes();
+    this.loadCompanies();
     this.loadPrinters();
   }
 
@@ -138,6 +143,26 @@ export class PrintersComponent implements OnInit, OnDestroy {
         ];
       }
     });
+  }
+
+  loadCompanies(): void {
+    if (this.companiesSubscription) {
+      this.companiesSubscription.unsubscribe();
+    }
+
+    this.companiesSubscription = this.companyService.getList()
+      .subscribe({
+        next: (companies: Company[]) => {
+          this.companyOptions = (Array.isArray(companies) ? companies : []).map(company => ({
+            label: company.companyName || `ID: ${company.companyId}`,
+            value: company.companyId
+          }));
+        },
+        error: (err: any) => {
+          console.error('Error al cargar empresas:', err);
+          this.companyOptions = [];
+        }
+      });
   }
 
   loadPrinters(): void {
@@ -185,6 +210,9 @@ export class PrintersComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
+    }
+    if (this.companiesSubscription) {
+      this.companiesSubscription.unsubscribe();
     }
     this.tableDataSubject.complete();
   }
