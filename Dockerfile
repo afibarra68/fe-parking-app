@@ -25,15 +25,21 @@ RUN if [ "$PRODUCTION" != "true" ]; then \
 COPY package*.json ./
 
 # Instalar dependencias (npm ci requiere package-lock.json)
-# Si package-lock.json existe, usa npm ci (más rápido y determinístico)
-# Si no existe, usa npm install
+# Instalar todas las dependencias incluyendo devDependencies (necesarias para el build)
 RUN if [ -f package-lock.json ]; then \
         npm ci && \
         echo "✓ Dependencias instaladas con npm ci"; \
     else \
         npm install && \
         echo "✓ Dependencias instaladas con npm install"; \
-    fi
+    fi && \
+    # Verificar que @angular/cli está instalado
+    if [ ! -f "node_modules/.bin/ng" ]; then \
+        echo "ERROR: Angular CLI no encontrado en node_modules/.bin/ng"; \
+        ls -la node_modules/.bin/ | head -20; \
+        exit 1; \
+    fi && \
+    echo "✓ Angular CLI verificado en node_modules/.bin/ng"
 
 # Copiar código fuente
 COPY . .
@@ -47,7 +53,8 @@ RUN if [ ! -f "nginx.conf" ]; then \
 
 # Compilar la aplicación para producción
 # Con Angular 20, esto genera dist/t-parking/browser y dist/t-parking/server
-RUN npm run build -- --configuration production
+# Usar npx para ejecutar ng desde node_modules/.bin (más confiable que npm run)
+RUN npx --yes ng build --configuration production
 
 # Validar que el build generó los archivos necesarios
 RUN if [ ! -d "/app/dist/t-parking/browser" ]; then \
