@@ -69,6 +69,11 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
   form: FormGroup;
   searchForm: FormGroup;
 
+  // Propiedades para manejo de imágenes
+  selectedImage: File | null = null;
+  selectedImagePreview: string | null = null;
+  imageEscPosCode: string | null = null;
+
   constructor(
     private ticketTemplateService: TicketTemplateService,
     private printerService: PrinterService,
@@ -263,6 +268,8 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     // Deshabilitar paperSize (se establecerá automáticamente cuando se seleccione una impresora)
     this.form.get('paperSize')?.setValue(null, { emitEvent: false });
     this.form.get('paperSize')?.disable();
+    // Limpiar imagen seleccionada
+    this.clearImage();
     // Asegurar que las impresoras estén cargadas antes de abrir el modal
     if (this.printerOptions.length === 0) {
       this.loadPrinters();
@@ -309,6 +316,9 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
       }
     };
 
+    // Limpiar imagen seleccionada al editar
+    this.clearImage();
+    
     // Si ya hay opciones cargadas, establecer valores inmediatamente
     if (this.printerOptions.length > 0) {
       setFormValues();
@@ -331,6 +341,8 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     // Mantener deshabilitado (se establecerá automáticamente cuando se seleccione una impresora)
     this.form.get('paperSize')?.setValue(null, { emitEvent: false });
     this.form.get('paperSize')?.disable();
+    // Limpiar imagen seleccionada
+    this.clearImage();
   }
 
   submitForm(): void {
@@ -480,6 +492,84 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     return result;
   }
 
+  // Reemplazar códigos de imagen ESC/POS con placeholders para facilitar el renderizado
+  private replaceImageCodesWithPlaceholders(content: string): string {
+    let result = content;
+    let i = 0;
+    const placeholders: Array<{start: number, end: number, width: number, height: number}> = [];
+    
+    while (i < content.length) {
+      const char = content[i];
+      
+      // Detectar ESC * (comando de gráficos raster)
+      if (char === '\u001B' && i + 1 < content.length && content[i + 1] === '*') {
+        const startPos = i;
+        i += 2; // ESC *
+        
+        if (i < content.length) {
+          const mode = content.charCodeAt(i++); // m
+          if (i + 1 < content.length) {
+            const nL = content.charCodeAt(i++); // nL
+            const nH = content.charCodeAt(i++); // nH
+            const dataLength = nL + (nH << 8);
+            
+            // Calcular dimensiones aproximadas basadas en el modo y datos
+            // Modo 0: 8-dot single-density, 1 píxel por bit
+            // Modo 1: 8-dot double-density, 1 píxel por bit (más ancho)
+            // Modo 32: 24-dot single-density, 3 píxeles por bit
+            // Modo 33: 24-dot double-density, 3 píxeles por bit (más ancho)
+            let bytesPerLine = dataLength;
+            let width = bytesPerLine * 8;
+            let height = 1; // Una línea por comando
+            
+            // Buscar líneas consecutivas de imágenes para calcular altura
+            let nextLineStart = i + dataLength;
+            let lineCount = 1;
+            while (nextLineStart < content.length && 
+                   content[nextLineStart] === '\u001B' && 
+                   nextLineStart + 1 < content.length && 
+                   content[nextLineStart + 1] === '*') {
+              lineCount++;
+              nextLineStart += 2; // ESC *
+              if (nextLineStart < content.length) {
+                nextLineStart++; // m
+                if (nextLineStart + 1 < content.length) {
+                  const nextNL = content.charCodeAt(nextLineStart++);
+                  const nextNH = content.charCodeAt(nextLineStart++);
+                  const nextDataLength = nextNL + (nextNH << 8);
+                  nextLineStart += nextDataLength;
+                }
+              }
+            }
+            
+            height = lineCount;
+            
+            placeholders.push({
+              start: startPos,
+              end: i + dataLength,
+              width: width,
+              height: height
+            });
+            
+            i += dataLength;
+            continue;
+          }
+        }
+      }
+      
+      i++;
+    }
+    
+    // Reemplazar desde el final para mantener las posiciones correctas
+    for (let j = placeholders.length - 1; j >= 0; j--) {
+      const ph = placeholders[j];
+      const placeholder = '\uFFFD\uFFFE' + ph.width + ',' + ph.height + '\uFFFF';
+      result = result.substring(0, ph.start) + placeholder + result.substring(ph.end);
+    }
+    
+    return result;
+  }
+
   // Convertir template con ESC/POS a HTML para visualización
   getPreviewHTML(): string {
     const content = this.getPreviewContent();
@@ -489,6 +579,9 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
 
     // Convertir secuencias de escape literales a caracteres reales
     const processedContent = this.convertEscapeSequences(content);
+    
+    // Detectar y reemplazar códigos de imagen ESC/POS con placeholders visuales
+    const contentWithImagePlaceholders = this.replaceImageCodesWithPlaceholders(processedContent);
 
     let html = '';
     let currentStyle = {
@@ -499,28 +592,52 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     };
 
     let i = 0;
-    while (i < processedContent.length) {
-      const char = processedContent[i];
-      const charCode = processedContent.charCodeAt(i);
+    
+    while (i < contentWithImagePlaceholders.length) {
+      const char = contentWithImagePlaceholders[i];
+      
+      // Detectar placeholder de imagen (marcadores especiales)
+      if (char === '\uFFFD' && i + 1 < contentWithImagePlaceholders.length && 
+          contentWithImagePlaceholders[i + 1] === '\uFFFE') {
+        // Encontrar el final del placeholder
+        let endIndex = i + 2;
+        while (endIndex < contentWithImagePlaceholders.length && 
+               contentWithImagePlaceholders[endIndex] !== '\uFFFF') {
+          endIndex++;
+        }
+        
+        if (endIndex < contentWithImagePlaceholders.length) {
+          // Extraer información de la imagen del placeholder
+          const imageInfo = contentWithImagePlaceholders.substring(i + 2, endIndex);
+          const [width, height] = imageInfo.split(',').map(Number);
+          
+          // Mostrar placeholder visual para la imagen
+          html += `<div class="image-placeholder" style="width: ${Math.min(width || 200, 300)}px; height: ${Math.min(height || 100, 200)}px; border: 2px dashed #ccc; display: inline-block; margin: 0.5rem 0; background: #f5f5f5; text-align: center; line-height: ${Math.min(height || 100, 200)}px; color: #999; font-size: 0.75rem;">[Imagen ${width || 200}x${height || 100}]</div>`;
+          i = endIndex + 1;
+          continue;
+        }
+      }
+      
+      const charCode = contentWithImagePlaceholders.charCodeAt(i);
 
       // ESC @ - Inicializar impresora (reset)
-      if (char === '\u001B' && i + 1 < processedContent.length && processedContent[i + 1] === '@') {
+      if (char === '\u001B' && i + 1 < contentWithImagePlaceholders.length && contentWithImagePlaceholders[i + 1] === '@') {
         currentStyle = { bold: false, doubleHeight: false, doubleWidth: false, align: 'left' };
         i += 2;
         continue;
       }
 
       // ESC d - Avanzar líneas
-      if (char === '\u001B' && i + 1 < processedContent.length && processedContent[i + 1] === 'd') {
-        const lines = i + 2 < processedContent.length ? processedContent.charCodeAt(i + 2) : 1;
+      if (char === '\u001B' && i + 1 < contentWithImagePlaceholders.length && contentWithImagePlaceholders[i + 1] === 'd') {
+        const lines = i + 2 < contentWithImagePlaceholders.length ? contentWithImagePlaceholders.charCodeAt(i + 2) : 1;
         html += '<br>'.repeat(Math.max(1, lines));
         i += 3;
         continue;
       }
 
       // ESC a - Justificación (0=izquierda, 1=centro, 2=derecha)
-      if (char === '\u001B' && i + 1 < processedContent.length && processedContent[i + 1] === 'a') {
-        const alignCode = i + 2 < processedContent.length ? processedContent.charCodeAt(i + 2) : 0;
+      if (char === '\u001B' && i + 1 < contentWithImagePlaceholders.length && contentWithImagePlaceholders[i + 1] === 'a') {
+        const alignCode = i + 2 < contentWithImagePlaceholders.length ? contentWithImagePlaceholders.charCodeAt(i + 2) : 0;
         if (alignCode === 0) currentStyle.align = 'left';
         else if (alignCode === 1) currentStyle.align = 'center';
         else if (alignCode === 2) currentStyle.align = 'right';
@@ -529,8 +646,8 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
       }
 
       // ESC ! - Formato de texto
-      if (char === '\u001B' && i + 1 < processedContent.length && processedContent[i + 1] === '!') {
-        const formatCode = i + 2 < processedContent.length ? processedContent.charCodeAt(i + 2) : 0;
+      if (char === '\u001B' && i + 1 < contentWithImagePlaceholders.length && contentWithImagePlaceholders[i + 1] === '!') {
+        const formatCode = i + 2 < contentWithImagePlaceholders.length ? contentWithImagePlaceholders.charCodeAt(i + 2) : 0;
         currentStyle.bold = (formatCode & 0x08) !== 0;
         currentStyle.doubleHeight = (formatCode & 0x10) !== 0;
         currentStyle.doubleWidth = (formatCode & 0x20) !== 0;
@@ -539,7 +656,7 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
       }
 
       // GS V - Corte de papel (ignorar para preview)
-      if (char === '\u001D' && i + 1 < processedContent.length && processedContent[i + 1] === 'V') {
+      if (char === '\u001D' && i + 1 < contentWithImagePlaceholders.length && contentWithImagePlaceholders[i + 1] === 'V') {
         i += 3;
         continue;
       }
@@ -570,9 +687,9 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
         let groupStart = i;
         const groupStyle = { ...currentStyle };
 
-        while (i < processedContent.length) {
-          const currentChar = processedContent[i];
-          const currentCharCode = processedContent.charCodeAt(i);
+        while (i < contentWithImagePlaceholders.length) {
+          const currentChar = contentWithImagePlaceholders[i];
+          const currentCharCode = contentWithImagePlaceholders.charCodeAt(i);
 
           // Si encontramos un código de control o cambio de estilo, salir
           if (currentChar === '\u001B' || currentChar === '\u001D' ||
@@ -635,6 +752,207 @@ export class TicketTemplatesComponent implements OnInit, OnDestroy {
     }
     // Si es EnumResource
     return (ticketType as EnumResource).description || (ticketType as EnumResource).id || '';
+  }
+
+  // Métodos para manejo de imágenes
+  selectImageFile(): void {
+    const fileInput = document.getElementById('imageUpload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      
+      // Validar tipo de archivo
+      if (!file.type.match(/^image\/(png|jpeg|jpg|gif)$/)) {
+        this.error = 'Por favor seleccione una imagen válida (PNG, JPG, GIF)';
+        return;
+      }
+
+      // Validar tamaño (máximo 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        this.error = 'La imagen es demasiado grande. Máximo 2MB';
+        return;
+      }
+
+      this.selectedImage = file;
+      
+      // Crear vista previa
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.selectedImagePreview = e.target.result;
+        // Convertir a ESC/POS
+        this.convertImageToEscPos(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  clearImage(): void {
+    this.selectedImage = null;
+    this.selectedImagePreview = null;
+    this.imageEscPosCode = null;
+  }
+
+  insertImageIntoTemplate(): void {
+    if (!this.imageEscPosCode) {
+      this.error = 'No hay imagen para insertar';
+      return;
+    }
+
+    const templateControl = this.form.get('template');
+    if (!templateControl) return;
+
+    const currentTemplate = templateControl.value || '';
+    const imageCode = this.imageEscPosCode; // Guardar en variable local para evitar problemas de null
+    
+    // Usar setTimeout para asegurar que el DOM esté actualizado
+    setTimeout(() => {
+      const textarea = document.getElementById('template') as HTMLTextAreaElement;
+      const cursorPosition = textarea ? (textarea.selectionStart || 0) : currentTemplate.length;
+      
+      // Insertar el código ESC/POS de la imagen en la posición del cursor
+      const newTemplate = 
+        currentTemplate.slice(0, cursorPosition) + 
+        '\n' + imageCode + '\n' +
+        currentTemplate.slice(cursorPosition);
+      
+      templateControl.setValue(newTemplate);
+      
+      // Restaurar el cursor después de la inserción
+      setTimeout(() => {
+        if (textarea) {
+          const newPosition = cursorPosition + imageCode.length + 2; // +2 por los \n
+          textarea.setSelectionRange(newPosition, newPosition);
+          textarea.focus();
+        }
+      }, 0);
+      
+      this.error = null;
+    }, 0);
+  }
+
+  private convertImageToEscPos(imageDataUrl: string): void {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        // Obtener el ancho máximo según el tamaño de papel
+        const paperSize = this.form.get('paperSize')?.value || 'E58MM';
+        const maxWidth = paperSize.includes('80') || paperSize === 'E80MM' ? 400 : 300;
+        
+        // Redimensionar imagen si es necesario
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          this.error = 'Error al procesar la imagen';
+          return;
+        }
+
+        // Dibujar imagen en canvas
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convertir a escala de grises y luego a bitmap (1 bit por píxel)
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const bitmap = this.imageDataToBitmap(imageData);
+        
+        // Generar código ESC/POS
+        this.imageEscPosCode = this.bitmapToEscPos(bitmap, width, height);
+        this.error = null;
+      } catch (error) {
+        console.error('Error al convertir imagen:', error);
+        this.error = 'Error al procesar la imagen';
+      }
+    };
+    
+    img.onerror = () => {
+      this.error = 'Error al cargar la imagen';
+    };
+    
+    img.src = imageDataUrl;
+  }
+
+  private imageDataToBitmap(imageData: ImageData): boolean[] {
+    const bitmap: boolean[] = [];
+    const data = imageData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      // Convertir RGB a escala de grises
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const gray = (r * 0.299 + g * 0.587 + b * 0.114);
+      
+      // Umbral: si es más oscuro que 128, es negro (true), si no es blanco (false)
+      bitmap.push(gray < 128);
+    }
+    
+    return bitmap;
+  }
+
+  private bitmapToEscPos(bitmap: boolean[], width: number, height: number): string {
+    // ESC/POS comando para imprimir gráficos raster: ESC * m nL nH d1...dk
+    // m = modo (0 = 8-dot single-density, 1 = 8-dot double-density, 32 = 24-dot single-density, 33 = 24-dot double-density)
+    // nL, nH = bytes de datos (little-endian)
+    // d1...dk = datos de la imagen
+    
+    const bytesPerLine = Math.ceil(width / 8);
+    const totalBytes = bytesPerLine * height;
+    
+    // Convertir bitmap a bytes (8 píxeles por byte)
+    const imageBytes: number[] = [];
+    
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < bytesPerLine; x++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const pixelX = x * 8 + bit;
+          if (pixelX < width) {
+            const index = y * width + pixelX;
+            if (bitmap[index]) {
+              byte |= (1 << (7 - bit)); // MSB primero
+            }
+          }
+        }
+        imageBytes.push(byte);
+      }
+    }
+    
+    // Generar código ESC/POS
+    // Usar modo 0 (8-dot single-density) para mejor compatibilidad
+    let escPosCode = '\u001B@'; // Inicializar impresora
+    escPosCode += '\u001Ba\u0001'; // Centrar
+    
+    // Imprimir línea por línea para mejor control
+    for (let y = 0; y < height; y++) {
+      const lineStart = y * bytesPerLine;
+      const lineBytes = imageBytes.slice(lineStart, lineStart + bytesPerLine);
+      const nL = lineBytes.length & 0xFF;
+      const nH = (lineBytes.length >> 8) & 0xFF;
+      
+      // ESC * m nL nH d1...dk
+      escPosCode += '\u001B*' + String.fromCharCode(0) + String.fromCharCode(nL) + String.fromCharCode(nH);
+      escPosCode += String.fromCharCode(...lineBytes);
+      escPosCode += '\n'; // Avanzar línea
+    }
+    
+    escPosCode += '\u001Ba\u0000'; // Volver a alineación izquierda
+    
+    return escPosCode;
   }
 }
 
