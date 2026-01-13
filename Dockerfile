@@ -24,9 +24,16 @@ RUN if [ "$PRODUCTION" != "true" ]; then \
 # Copiar archivos de configuración primero para cachear dependencias
 COPY package*.json ./
 
-# Instalar dependencias (npm ci es más rápido y determinístico)
-RUN npm ci --only=production=false && \
-    echo "✓ Dependencias instaladas"
+# Instalar dependencias (npm ci requiere package-lock.json)
+# Si package-lock.json existe, usa npm ci (más rápido y determinístico)
+# Si no existe, usa npm install
+RUN if [ -f package-lock.json ]; then \
+        npm ci && \
+        echo "✓ Dependencias instaladas con npm ci"; \
+    else \
+        npm install && \
+        echo "✓ Dependencias instaladas con npm install"; \
+    fi
 
 # Copiar código fuente
 COPY . .
