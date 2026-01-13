@@ -25,6 +25,12 @@ WORKDIR /app
 # Copiar package.json y package-lock.json para instalar dependencias
 COPY --from=builder /app/package*.json /app/
 
+# Verificar que package-lock.json existe antes de instalar
+RUN if [ ! -f package-lock.json ]; then \
+      echo "⚠️  package-lock.json no encontrado, generando uno nuevo..." && \
+      npm install --package-lock-only --only=production; \
+    fi
+
 # Instalar solo dependencias de producción necesarias para el servidor
 # Esto incluye: express, http-proxy-middleware y todas las dependencias de Angular SSR
 RUN npm ci --only=production && \
