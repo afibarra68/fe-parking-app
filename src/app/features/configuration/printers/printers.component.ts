@@ -2,6 +2,8 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { PrinterService, Printer, PrinterPageResponse } from '../../../core/services/printer.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
+import { CompanyService, Company } from '../../../core/services/company.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -42,13 +44,12 @@ export class PrintersComponent implements OnInit, OnDestroy {
   first = 0;
   
   private subscription?: Subscription;
+  private companiesSubscription?: Subscription;
 
   // Opciones para selects
-  printerTypes: SelectItem[] = [
-    { label: 'COM', value: 'COM' },
-    { label: 'WINDOWS', value: 'WINDOWS' },
-    { label: 'NETWORK', value: 'NETWORK' }
-  ];
+  printerTypes: SelectItem[] = [];
+  paperTypes: SelectItem[] = [];
+  companyOptions: SelectItem[] = [];
 
   statusOptions: SelectItem[] = [
     { label: 'Activo', value: true },
@@ -59,7 +60,8 @@ export class PrintersComponent implements OnInit, OnDestroy {
   cols: TableColumn[] = [
     { field: 'printerId', header: 'ID', width: '80px' },
     { field: 'printerName', header: 'Nombre', width: '200px' },
-    { field: 'printerType', header: 'Tipo', width: '120px' },
+    { field: 'printerTypeDisplay', header: 'Tipo', width: '120px' },
+    { field: 'paperTypeDisplay', header: 'Tipo Papel', width: '120px' },
     { field: 'connectionString', header: 'Conexión', width: '200px' },
     { field: 'isActive', header: 'Activo', width: '100px' }
   ];
@@ -76,11 +78,14 @@ export class PrintersComponent implements OnInit, OnDestroy {
 
   constructor(
     private printerService: PrinterService,
+    private enumService: EnumService,
+    private companyService: CompanyService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
       printerName: ['', [Validators.required]],
       printerType: ['', [Validators.required]],
+      paperType: ['', [Validators.required]],
       connectionString: ['', [Validators.required]],
       isActive: [true],
       companyCompanyId: [null],
@@ -95,7 +100,69 @@ export class PrintersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadPrinterTypes();
+    this.loadPaperTypes();
+    this.loadCompanies();
     this.loadPrinters();
+  }
+
+  loadPrinterTypes(): void {
+    this.enumService.getEnumByName('EPrinterType').subscribe({
+      next: (types: EnumResource[]) => {
+        this.printerTypes = types.map(type => ({
+          label: type.description || type.id,
+          value: type.id
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar tipos de impresora:', err);
+        // Fallback a valores hardcodeados si falla
+        this.printerTypes = [
+          { label: 'COM', value: 'COM' },
+          { label: 'WINDOWS', value: 'WINDOWS' },
+          { label: 'NETWORK', value: 'NETWORK' }
+        ];
+      }
+    });
+  }
+
+  loadPaperTypes(): void {
+    this.enumService.getEnumByName('ELargeVariableTicket').subscribe({
+      next: (types: EnumResource[]) => {
+        this.paperTypes = types.map(type => ({
+          label: type.description || type.id,
+          value: type.id
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar tipos de papel:', err);
+        // Fallback a valores hardcodeados si falla
+        this.paperTypes = [
+          { label: '58mm', value: 'E58MM' },
+          { label: '88mm', value: 'E88MM' }
+        ];
+      }
+    });
+  }
+
+  loadCompanies(): void {
+    if (this.companiesSubscription) {
+      this.companiesSubscription.unsubscribe();
+    }
+
+    this.companiesSubscription = this.companyService.getList()
+      .subscribe({
+        next: (companies: Company[]) => {
+          this.companyOptions = (Array.isArray(companies) ? companies : []).map(company => ({
+            label: company.companyName || `ID: ${company.companyId}`,
+            value: company.companyId
+          }));
+        },
+        error: (err: any) => {
+          console.error('Error al cargar empresas:', err);
+          this.companyOptions = [];
+        }
+      });
   }
 
   loadPrinters(): void {
@@ -115,8 +182,14 @@ export class PrintersComponent implements OnInit, OnDestroy {
     this.subscription = this.printerService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: PrinterPageResponse) => {
+          // Formatear printerType y paperType para mostrar descripciones en la tabla
+          const formattedData = data.content.map(printer => ({
+            ...printer,
+            printerTypeDisplay: this.getPrinterTypeDisplay(printer.printerType),
+            paperTypeDisplay: this.getPaperTypeDisplay(printer.paperType)
+          }));
           this.tableDataSubject.next({
-            data: data.content,
+            data: formattedData,
             totalRecords: data.totalElements,
             isFirst: this.page === 0
           });
@@ -137,6 +210,9 @@ export class PrintersComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
+    }
+    if (this.companiesSubscription) {
+      this.companiesSubscription.unsubscribe();
     }
     this.tableDataSubject.complete();
   }
@@ -161,9 +237,20 @@ export class PrintersComponent implements OnInit, OnDestroy {
 
   openEditForm(printer: Printer): void {
     this.editingPrinter = printer;
+    // Extraer el valor del printerType (puede ser string o EnumResource)
+    const printerTypeValue = typeof printer.printerType === 'string' 
+      ? printer.printerType 
+      : (printer.printerType as any)?.id || '';
+    
+    // Extraer el valor del paperType (puede ser string o EnumResource)
+    const paperTypeValue = typeof printer.paperType === 'string' 
+      ? printer.paperType 
+      : (printer.paperType as any)?.id || '';
+    
     this.form.patchValue({
       printerName: printer.printerName || '',
-      printerType: printer.printerType || '',
+      printerType: printerTypeValue,
+      paperType: paperTypeValue,
       connectionString: printer.connectionString || '',
       isActive: printer.isActive !== undefined ? printer.isActive : true,
       companyCompanyId: printer.companyCompanyId || null,
@@ -230,6 +317,28 @@ export class PrintersComponent implements OnInit, OnDestroy {
     this.size = event.rows || environment.rowsPerPage || 10;
     this.first = event.first || 0;
     this.loadPrinters();
+  }
+
+  getPrinterTypeDisplay(printerType: string | EnumResource | undefined): string {
+    if (!printerType) return '';
+    if (typeof printerType === 'string') {
+      // Buscar la descripción en printerTypes
+      const typeOption = this.printerTypes.find(t => t.value === printerType);
+      return typeOption?.label || printerType;
+    }
+    // Si es EnumResource
+    return (printerType as EnumResource).description || (printerType as EnumResource).id || '';
+  }
+
+  getPaperTypeDisplay(paperType: string | EnumResource | undefined): string {
+    if (!paperType) return '';
+    if (typeof paperType === 'string') {
+      // Buscar la descripción en paperTypes
+      const typeOption = this.paperTypes.find(t => t.value === paperType);
+      return typeOption?.label || paperType;
+    }
+    // Si es EnumResource
+    return (paperType as EnumResource).description || (paperType as EnumResource).id || '';
   }
 }
 

@@ -49,6 +49,9 @@ export class UserPrintersComponent implements OnInit, OnDestroy {
   // Opciones para selects
   userOptions: SelectItem[] = [];
   printerOptions: SelectItem[] = [];
+  
+  // Almacenar impresoras para enriquecer datos de la tabla
+  printers: Printer[] = [];
 
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
@@ -90,7 +93,7 @@ export class UserPrintersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadUsersAndPrinters();
-    this.loadUserPrinters();
+    // No cargar loadUserPrinters aquí porque se llama después de cargar impresoras
   }
 
   loadUsersAndPrinters(): void {
@@ -104,10 +107,29 @@ export class UserPrintersComponent implements OnInit, OnDestroy {
           value: user.appUserId
         }));
 
-        this.printerOptions = data.printers.content.map(printer => ({
-          label: `${printer.printerName || ''} (${printer.printerType || ''})`.trim(),
-          value: printer.printerId
-        }));
+        // Almacenar las impresoras para enriquecer datos de la tabla
+        this.printers = data.printers.content;
+
+        this.printerOptions = data.printers.content.map(printer => {
+          // Extraer el valor del printerType (puede ser string o EnumResource)
+          let printerTypeValue: string = '';
+          if (printer.printerType) {
+            if (typeof printer.printerType === 'string') {
+              printerTypeValue = printer.printerType;
+            } else {
+              // Si es EnumResource, extraer la descripción o el id
+              printerTypeValue = (printer.printerType as any)?.description || (printer.printerType as any)?.id || '';
+            }
+          }
+          
+          return {
+            label: `${printer.printerName || ''}${printerTypeValue ? ` (${printerTypeValue})` : ''}`.trim(),
+            value: printer.printerId
+          };
+        });
+        
+        // Recargar datos de la tabla después de cargar impresoras
+        this.loadUserPrinters();
       },
       error: (err) => {
         this.error = 'Error al cargar usuarios e impresoras';
@@ -167,8 +189,31 @@ export class UserPrintersComponent implements OnInit, OnDestroy {
 
   getPrinterName(printerId?: number): string {
     if (!printerId) return '';
-    const printer = this.printerOptions.find(p => p.value === printerId);
-    return printer?.label || '';
+    
+    // Buscar primero en printerOptions (más rápido)
+    const printerOption = this.printerOptions.find(p => p.value === printerId);
+    if (printerOption) {
+      return printerOption.label || '';
+    }
+    
+    // Si no se encuentra, buscar en el array de impresoras
+    const printer = this.printers.find(p => p.printerId === printerId);
+    if (printer) {
+      // Extraer el valor del printerType (puede ser string o EnumResource)
+      let printerTypeValue: string = '';
+      if (printer.printerType) {
+        if (typeof printer.printerType === 'string') {
+          printerTypeValue = printer.printerType;
+        } else {
+          // Si es EnumResource, extraer la descripción o el id
+          printerTypeValue = (printer.printerType as any)?.description || (printer.printerType as any)?.id || '';
+        }
+      }
+      
+      return `${printer.printerName || ''}${printerTypeValue ? ` (${printerTypeValue})` : ''}`.trim();
+    }
+    
+    return '';
   }
 
   ngOnDestroy(): void {

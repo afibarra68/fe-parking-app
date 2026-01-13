@@ -12,6 +12,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+// CalendarModule importado en SharedModule
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
 import { SelectItem } from 'primeng/api';
@@ -45,9 +46,11 @@ export class BillingPriceComponent implements OnInit {
   showForm = signal(false);
   editingBillingPrice = signal<BillingPrice | null>(null);
   error = signal<string | null>(null);
+  submitted = signal(false);
   companyOptions = signal<SelectItem[]>([]);
   statusOptions = signal<SelectItem[]>([]);
-  tipoVehiculoOptions = signal<SelectItem[]>([]);
+  vehicleTypeOptions = signal<SelectItem[]>([]);
+  basicVehicleTypeOptions = signal<SelectItem[]>([]);
   businessServiceOptions = signal<SelectItem[]>([]);
   currentCompanyId = signal<number | null>(null);
 
@@ -71,10 +74,10 @@ export class BillingPriceComponent implements OnInit {
   cols: TableColumn[] = [
     { field: 'billingPriceId', header: 'ID', width: '80px' },
     { field: 'statusDisplay', header: 'Estado', width: '120px' },
-    { field: 'coverType', header: 'Tipo de Cobertura', width: '150px' },
-    { field: 'tipoVehiculoDisplay', header: 'Tipo de Vehículo', width: '150px' },
-    { field: 'pricePerHour', header: 'Precio por Hora', width: '130px' },
-    { field: 'applyDiscount', header: 'Aplica Descuento', width: '150px' }
+    { field: 'easyCoverModeDisplay', header: 'Modo', width: '100px' },
+    { field: 'tipoVehiculoDisplay', header: 'Tipo Vehículo', width: '150px' },
+    { field: 'pricePerHour', header: 'Precio/Hora', width: '130px' },
+    { field: 'dateStartDisabledDisplay', header: 'Fecha Deshabilitación', width: '150px' }
   ];
 
   form: FormGroup;
@@ -89,25 +92,33 @@ export class BillingPriceComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
-      status: [''],
-      coverType: [''],
-      applyDiscount: [false],
-      discountDiscountId: [null],
-      companyCompanyId: [null],
+      status: [null, Validators.required],
+      dateStartDisabled: [null],
+      companyCompanyId: [null, Validators.required],
       businessServiceBusinessServiceId: [null],
-      hours: [1], // Valor por defecto: 1 hora (no visible en el formulario)
       pricePerHour: [null, [Validators.required, Validators.min(0)]],
-      mount: [null], // Se calcula automáticamente: pricePerHour * hours (donde hours = 1)
-      tipoVehiculo: [null]
+      easyCoverMode: [false, Validators.required],
+      basicVehicleType: [null],
+      vehicleType: [null]
     });
 
-    // Calcular mount automáticamente cuando cambia pricePerHour
-    // Usamos 1 hora como valor por defecto
-    this.form.get('pricePerHour')?.valueChanges.subscribe(() => this.calculateMount());
+    // Validación condicional según easyCoverMode
+    this.form.get('easyCoverMode')?.valueChanges.subscribe(easyMode => {
+      if (easyMode === true) {
+        this.form.get('basicVehicleType')?.setValidators([Validators.required]);
+        this.form.get('vehicleType')?.clearValidators();
+        this.form.get('vehicleType')?.setValue(null);
+      } else {
+        this.form.get('vehicleType')?.setValidators([Validators.required]);
+        this.form.get('basicVehicleType')?.clearValidators();
+        this.form.get('basicVehicleType')?.setValue(null);
+      }
+      this.form.get('basicVehicleType')?.updateValueAndValidity();
+      this.form.get('vehicleType')?.updateValueAndValidity();
+    });
 
     this.searchForm = this.fb.group({
       status: [''],
-      tipoVehiculo: [null],
       companyCompanyId: [null]
     });
   }
@@ -163,8 +174,14 @@ export class BillingPriceComponent implements OnInit {
       companies: this.companyService.getList().pipe(
         catchError(() => of([] as Company[]))
       ),
-      enums: this.enumService.getBillingPriceEnums().pipe(
-        catchError(() => of({ status: [], tipoVehiculo: [] } as { status: EnumResource[]; tipoVehiculo: EnumResource[] }))
+      status: this.enumService.getEnumByName('EBillingStatus').pipe(
+        catchError(() => of([] as EnumResource[]))
+      ),
+      vehicleType: this.enumService.getEnumByName('ETipoVehiculo').pipe(
+        catchError(() => of([] as EnumResource[]))
+      ),
+      basicVehicleType: this.enumService.getEnumByName('EBasicTipoVehiculo').pipe(
+        catchError(() => of([] as EnumResource[]))
       )
     })
       .pipe(
@@ -175,7 +192,7 @@ export class BillingPriceComponent implements OnInit {
         })
       )
       .subscribe({
-        next: ({ companies, enums }) => {
+        next: ({ companies, status, vehicleType, basicVehicleType }) => {
           // Procesar companies
           this.companyOptions.set(
             (Array.isArray(companies) ? companies : []).map(company => ({
@@ -184,29 +201,42 @@ export class BillingPriceComponent implements OnInit {
             }))
           );
 
-          // Procesar status desde enums
-          const statusOptions = (enums.status || []).map(status => ({
-            label: status.description,
-            value: status.id
-          }));
-          this.statusOptions.set(statusOptions);
+          // Procesar status
+          this.statusOptions.set(
+            status.map(s => ({
+              label: s.description,
+              value: s.id
+            }))
+          );
 
           // Crear mapa para búsqueda rápida de status
           this.statusMap.clear();
-          (enums.status || []).forEach(status => {
-            this.statusMap.set(status.id, status.description);
+          status.forEach(s => {
+            this.statusMap.set(s.id, s.description);
           });
 
-          // Procesar tiposVehiculo desde enums
-          const tipoVehiculoOptions = (enums.tipoVehiculo || []).map(tipo => ({
-            label: tipo.description,
-            value: tipo.id
-          }));
-          this.tipoVehiculoOptions.set(tipoVehiculoOptions);
+          // Procesar vehicleType
+          this.vehicleTypeOptions.set(
+            vehicleType.map(vt => ({
+              label: vt.description,
+              value: vt.id
+            }))
+          );
 
-          // Crear mapa para búsqueda O(1) en lugar de O(n)
+          // Procesar basicVehicleType
+          this.basicVehicleTypeOptions.set(
+            basicVehicleType.map(bvt => ({
+              label: bvt.description,
+              value: bvt.id
+            }))
+          );
+
+          // Crear mapa para búsqueda O(1) en lugar de O(n) - combinar ambos tipos
           this.tipoVehiculoMap.clear();
-          (enums.tipoVehiculo || []).forEach(tipo => {
+          vehicleType.forEach(tipo => {
+            this.tipoVehiculoMap.set(tipo.id, tipo.description);
+          });
+          basicVehicleType.forEach(tipo => {
             this.tipoVehiculoMap.set(tipo.id, tipo.description);
           });
         }
@@ -223,15 +253,8 @@ export class BillingPriceComponent implements OnInit {
       ? statusValue.id
       : (typeof statusValue === 'string' ? statusValue : undefined);
 
-    // Extraer el ID del tipoVehiculo si es un objeto EnumResource
-    const tipoVehiculoValue = this.searchForm.value.tipoVehiculo;
-    const tipoVehiculoId = typeof tipoVehiculoValue === 'object' && tipoVehiculoValue?.id
-      ? tipoVehiculoValue.id
-      : (typeof tipoVehiculoValue === 'string' ? tipoVehiculoValue : undefined);
-
     const filters = {
       status: statusId,
-      tipoVehiculo: tipoVehiculoId,
       companyCompanyId: this.searchForm.value.companyCompanyId || undefined
     };
 
@@ -242,12 +265,16 @@ export class BillingPriceComponent implements OnInit {
       )
       .subscribe({
         next: (data: BillingPricePageResponse) => {
-          // Formatear tipoVehiculo, status y calcular precio por hora
+          // Formatear vehicleType/basicVehicleType, status y mostrar precio por hora
           const formattedData = data.content.map(item => ({
             ...item,
             statusDisplay: this.getStatusDescription(item.status),
-            tipoVehiculoDisplay: this.getTipoVehiculoDescription(item.tipoVehiculo),
-            pricePerHour: this.calculatePricePerHour(item.mount, item.hours)
+            easyCoverModeDisplay: item.easyCoverMode ? 'Fácil' : 'Completo',
+            tipoVehiculoDisplay: this.getVehicleTypeDescription(item),
+            pricePerHour: item.amountByHour ? this.formatAmount(item.amountByHour) : '-',
+            dateStartDisabledDisplay: item.dateStartDisabled
+              ? this.formatDate(item.dateStartDisabled)
+              : '-'
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -264,16 +291,12 @@ export class BillingPriceComponent implements OnInit {
   openCreateForm(): void {
     // Cerrar cualquier edición previa
     this.editingBillingPrice.set(null);
+    this.submitted.set(false);
     // Resetear formulario de forma eficiente
-    // Usar 1 hora por defecto (no visible en el formulario)
     this.form.reset({
-      applyDiscount: false,
-      tipoVehiculo: null,
+      easyCoverMode: false,
       companyCompanyId: this.currentCompanyId(),
-      businessServiceBusinessServiceId: null,
-      hours: 1, // Valor por defecto: 1 hora
-      pricePerHour: null,
-      mount: null
+      businessServiceBusinessServiceId: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
@@ -284,11 +307,6 @@ export class BillingPriceComponent implements OnInit {
   onTableEdit(event: any): void {
     // Establecer datos de edición
     this.editingBillingPrice.set(event);
-    // Cargar datos en el formulario
-    // Calcular precio por hora desde mount y hours
-    const pricePerHour = event.hours && event.mount && event.hours > 0
-      ? event.mount / event.hours
-      : null;
 
     // Extraer el ID del status si es un objeto EnumResource
     const statusValue = event.status;
@@ -296,38 +314,48 @@ export class BillingPriceComponent implements OnInit {
       ? statusValue.id
       : (typeof statusValue === 'string' ? statusValue : '');
 
-    // Extraer el ID del tipoVehiculo si es un objeto EnumResource
-    const tipoVehiculoValue = event.tipoVehiculo;
-    const tipoVehiculoId = typeof tipoVehiculoValue === 'object' && tipoVehiculoValue?.id
-      ? tipoVehiculoValue.id
-      : (typeof tipoVehiculoValue === 'string' ? tipoVehiculoValue : null);
+    // Extraer IDs de vehicleType o basicVehicleType según easyCoverMode
+    const easyCoverMode = event.easyCoverMode ?? false;
+    let vehicleTypeId: string | null = null;
+    let basicVehicleTypeId: string | null = null;
+
+    if (easyCoverMode) {
+      const basicVehicleTypeValue = event.basicVehicleType;
+      basicVehicleTypeId = typeof basicVehicleTypeValue === 'object' && basicVehicleTypeValue?.id
+        ? basicVehicleTypeValue.id
+        : (typeof basicVehicleTypeValue === 'string' ? basicVehicleTypeValue : null);
+    } else {
+      const vehicleTypeValue = event.vehicleType;
+      vehicleTypeId = typeof vehicleTypeValue === 'object' && vehicleTypeValue?.id
+        ? vehicleTypeValue.id
+        : (typeof vehicleTypeValue === 'string' ? vehicleTypeValue : null);
+    }
 
     this.form.patchValue({
       billingPriceId: event.billingPriceId,
       status: statusId,
-      coverType: event.coverType || '',
-      applyDiscount: event.applyDiscount || false,
-      discountDiscountId: event.discountDiscountId || null,
       companyCompanyId: event.companyCompanyId || null,
       businessServiceBusinessServiceId: event.businessServiceBusinessServiceId || null,
-      hours: event.hours || null,
-      pricePerHour: pricePerHour,
-      mount: event.mount || null, // Mantener mount para enviar al backend
-      tipoVehiculo: tipoVehiculoId
+      pricePerHour: event.amountByHour || null,
+      easyCoverMode: easyCoverMode,
+      vehicleType: vehicleTypeId,
+      basicVehicleType: basicVehicleTypeId,
+      dateStartDisabled: event.dateStartDisabled ? new Date(event.dateStartDisabled) : null
     });
 
     // Si hay companyCompanyId, cargar servicios de negocio de esa empresa
     if (event.companyCompanyId) {
       this.loadBusinessServicesByCompany(event.companyCompanyId);
     }
+    this.submitted.set(false);
     // Abrir modal inmediatamente
     this.showForm.set(true);
   }
 
   onTableDelete(selected: any): void {
     if (selected && selected.billingPriceId) {
-      const itemName = selected.hours
-        ? `la tarifa de ${selected.hours} hora${selected.hours > 1 ? 's' : ''}`
+      const itemName = selected.amountByHour
+        ? `la tarifa de $${this.formatAmount(selected.amountByHour)} por hora`
         : 'esta tarifa';
 
       this.confirmationService.confirmDelete(itemName)
@@ -359,6 +387,7 @@ export class BillingPriceComponent implements OnInit {
   }
 
   submitForm(): void {
+    this.submitted.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -369,42 +398,41 @@ export class BillingPriceComponent implements OnInit {
 
     const formValue = this.form.value;
 
-    // Si está editando, mantener las horas originales; si es nuevo, usar 1 hora
-    const hours = this.editingBillingPrice()?.hours || formValue.hours || 1;
-    let mount = formValue.mount;
-
-    // Calcular mount desde pricePerHour y hours
-    if (formValue.pricePerHour && hours) {
-      mount = Math.round(formValue.pricePerHour * hours);
-    }
-
-    // Preparar status y tipoVehiculo como objetos EnumResource con id
-    // El backend espera EnumResource con al menos el campo id
+    // Extraer solo el id como string para status
     const statusValue = formValue.status;
-    const status: EnumResource | null | undefined = statusValue ? {
-      id: typeof statusValue === 'string' ? statusValue : (statusValue.id || statusValue),
-      description: typeof statusValue === 'object' ? (statusValue.description || '') : '',
-      descriptionExtended: typeof statusValue === 'object' ? (statusValue.descriptionExtended || '') : ''
-    } : (statusValue === null ? null : undefined);
+    const status: string | null = statusValue
+      ? (typeof statusValue === 'string' ? statusValue : (statusValue.id || statusValue))
+      : null;
 
-    const tipoVehiculoValue = formValue.tipoVehiculo;
-    const tipoVehiculo: EnumResource | null | undefined = tipoVehiculoValue ? {
-      id: typeof tipoVehiculoValue === 'string' ? tipoVehiculoValue : (tipoVehiculoValue.id || tipoVehiculoValue),
-      description: typeof tipoVehiculoValue === 'object' ? (tipoVehiculoValue.description || '') : '',
-      descriptionExtended: typeof tipoVehiculoValue === 'object' ? (tipoVehiculoValue.descriptionExtended || '') : ''
-    } : (tipoVehiculoValue === null ? null : undefined);
+    // Preparar vehicleType o basicVehicleType según easyCoverMode (solo el id como string)
+    const easyCoverMode = formValue.easyCoverMode ?? false;
+    let vehicleType: string | null = null;
+    let basicVehicleType: string | null = null;
+
+    if (easyCoverMode) {
+      const basicVehicleTypeValue = formValue.basicVehicleType;
+      basicVehicleType = basicVehicleTypeValue
+        ? (typeof basicVehicleTypeValue === 'string' ? basicVehicleTypeValue : (basicVehicleTypeValue.id || basicVehicleTypeValue))
+        : null;
+    } else {
+      const vehicleTypeValue = formValue.vehicleType;
+      vehicleType = vehicleTypeValue
+        ? (typeof vehicleTypeValue === 'string' ? vehicleTypeValue : (vehicleTypeValue.id || vehicleTypeValue))
+        : null;
+    }
 
     const billingPrice: BillingPrice = {
       billingPriceId: this.editingBillingPrice()?.billingPriceId,
       status: status ?? null,
-      coverType: formValue.coverType || null,
-      applyDiscount: formValue.applyDiscount || false,
-      discountDiscountId: formValue.discountDiscountId || null,
+      dateStartDisabled: formValue.dateStartDisabled
+        ? this.formatDateForBackend(formValue.dateStartDisabled)
+        : undefined,
       companyCompanyId: formValue.companyCompanyId || null,
       businessServiceBusinessServiceId: formValue.businessServiceBusinessServiceId || null,
-      hours: hours,
-      mount: mount || null,
-      tipoVehiculo: tipoVehiculo ?? null
+      amountByHour: formValue.pricePerHour || null,
+      easyCoverMode: easyCoverMode,
+      basicVehicleType: basicVehicleType,
+      vehicleType: vehicleType
     };
 
     const operation = this.editingBillingPrice()
@@ -418,18 +446,15 @@ export class BillingPriceComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          this.submitted.set(false);
           // Cerrar el modal inmediatamente sin esperar
           this.showForm.set(false);
           this.editingBillingPrice.set(null);
           // Resetear formulario
           this.form.reset({
-            applyDiscount: false,
-            tipoVehiculo: null,
+            easyCoverMode: false,
             companyCompanyId: this.currentCompanyId(),
-            businessServiceBusinessServiceId: null,
-            hours: 1, // Valor por defecto: 1 hora
-            pricePerHour: null,
-            mount: null
+            businessServiceBusinessServiceId: null
           });
           this.form.markAsUntouched();
           this.form.markAsPristine();
@@ -448,15 +473,12 @@ export class BillingPriceComponent implements OnInit {
     // Cerrar el modal inmediatamente
     this.showForm.set(false);
     this.editingBillingPrice.set(null);
+    this.submitted.set(false);
     // Resetear formulario de forma eficiente
     this.form.reset({
-      applyDiscount: false,
-      tipoVehiculo: null,
+      easyCoverMode: false,
       companyCompanyId: this.currentCompanyId(),
-      businessServiceBusinessServiceId: null,
-      hours: 1, // Valor por defecto: 1 hora
-      pricePerHour: null,
-      mount: null
+      businessServiceBusinessServiceId: null
     });
     this.form.markAsUntouched();
     this.form.markAsPristine();
@@ -484,50 +506,57 @@ export class BillingPriceComponent implements OnInit {
     return this.statusMap.get(statusId || '') || statusId || '-';
   }
 
-  getTipoVehiculoDescription(tipoVehiculo: EnumResource | string | null | undefined): string {
-    if (!tipoVehiculo) return '-';
-    // Si es un objeto EnumResource, usar description
-    if (typeof tipoVehiculo === 'object' && tipoVehiculo.description) {
-      return tipoVehiculo.description;
+  getVehicleTypeDescription(item: any): string {
+    if (item.easyCoverMode && item.basicVehicleType) {
+      const basicType = item.basicVehicleType;
+      if (typeof basicType === 'object' && basicType.description) {
+        return basicType.description;
+      }
+      const id = typeof basicType === 'string' ? basicType : basicType?.id;
+      return this.tipoVehiculoMap.get(id || '') || id || '-';
+    } else if (!item.easyCoverMode && item.vehicleType) {
+      const vehicleType = item.vehicleType;
+      if (typeof vehicleType === 'object' && vehicleType.description) {
+        return vehicleType.description;
+      }
+      const id = typeof vehicleType === 'string' ? vehicleType : vehicleType?.id;
+      return this.tipoVehiculoMap.get(id || '') || id || '-';
     }
-    // Si es string (id), buscar en el mapa
-    const tipoVehiculoId = typeof tipoVehiculo === 'string' ? tipoVehiculo : tipoVehiculo?.id;
-    return this.tipoVehiculoMap.get(tipoVehiculoId || '') || tipoVehiculoId || '-';
+    return '-';
   }
 
   /**
-   * Calcula el precio por hora basado en el monto total y las horas
-   * @param mount Monto total (puede ser null o undefined)
-   * @param hours Número de horas (puede ser null o undefined)
-   * @returns Precio por hora formateado como string, o '-' si no se puede calcular
+   * Formatea un monto como string con separador de miles y 2 decimales
    */
-  calculatePricePerHour(mount: number | null | undefined, hours: number | null | undefined): string {
-    if (!mount || !hours || hours <= 0) {
+  formatAmount(amount: number | null | undefined): string {
+    if (!amount && amount !== 0) {
       return '-';
     }
-    const pricePerHour = mount / hours;
-    // Formatear con separador de miles y 2 decimales
     return new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(pricePerHour);
+    }).format(amount);
   }
 
   /**
-   * Calcula el monto total basado en precio por hora
-   * Usa 1 hora como valor por defecto (ya que las horas no se muestran en el formulario)
-   * Se ejecuta automáticamente cuando cambia pricePerHour
+   * Formatea una fecha para enviar al backend (YYYY-MM-DD)
    */
-  calculateMount(): void {
-    const pricePerHour = this.form.get('pricePerHour')?.value;
-    const hours = 1; // Valor fijo: 1 hora (ya que no se muestra en el formulario)
+  formatDateForBackend(date: Date | string): string {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
-    if (pricePerHour && pricePerHour >= 0) {
-      const mount = Math.round(pricePerHour * hours);
-      this.form.patchValue({ mount, hours }, { emitEvent: false });
-    } else {
-      this.form.patchValue({ mount: null, hours: 1 }, { emitEvent: false });
-    }
+  /**
+   * Formatea una fecha para mostrar en la tabla (dd/MM/yyyy)
+   */
+  formatDate(dateString: string): string {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
   }
 
   onCompanyChange(event: any): void {

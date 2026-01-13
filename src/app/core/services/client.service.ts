@@ -19,8 +19,9 @@ export interface Client {
   typeIdentity?: string;
   numberIdentity?: string;
   people?: string;
-  paymentDay?: string;
+  subscriptionValidity?: string; // Vigencia de suscripción (LocalDate from backend as string ISO format)
   clientCompanyId?: number;
+  aceptedPlates?: string; // Placas separadas por comas: "OPO787,JHH787,IUIOP9"
 }
 
 @Injectable({
@@ -51,6 +52,11 @@ export class ClientService {
   // Actualizar
   update(client: Client): Observable<Client> {
     return this.http.put<Client>(`${this.apiUrl}/client`, client);
+  }
+
+  // Renovar período de pago
+  renewPaymentPeriod(clientId: number): Observable<Client> {
+    return this.http.post<Client>(`${this.apiUrl}/client/${clientId}/renew-period`, {});
   }
 }
 

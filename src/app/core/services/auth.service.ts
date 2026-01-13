@@ -1,4 +1,4 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap, catchError, throwError } from 'rxjs';
@@ -55,8 +55,36 @@ export class AuthService {
   private tokenKey = 'auth_token';
   private userKey = 'user_data';
 
+  // Signal reactivo para los roles del usuario
+  private readonly userRolesSignal = signal<string[]>([]);
+
   private get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  constructor() {
+    // Inicializar roles desde localStorage al crear el servicio
+    if (this.isBrowser) {
+      this.loadUserRolesFromStorage();
+
+      // Escuchar cambios en localStorage (para múltiples pestañas)
+      window.addEventListener('storage', () => {
+        this.loadUserRolesFromStorage();
+      });
+    }
+  }
+
+  /**
+   * Carga los roles del usuario desde localStorage
+   */
+  private loadUserRolesFromStorage(): void {
+    const userData = this.getUserData();
+    const roles = userData?.roles || [];
+    this.userRolesSignal.set(roles);
+  }
+
+  getUserRoles() {
+    return this.userRolesSignal.asReadonly();
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
@@ -80,6 +108,8 @@ export class AuthService {
               companyDescription: response.companyDescription,
               companyId: response.companyId
             }));
+            // Actualizar el signal de roles
+            this.userRolesSignal.set(response.roles || []);
           }
         }),
         catchError(error => {
@@ -93,6 +123,8 @@ export class AuthService {
     if (this.isBrowser) {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
+      // Limpiar el signal de roles
+      this.userRolesSignal.set([]);
     }
     this.router.navigate(['/auth/login']);
   }
@@ -120,8 +152,19 @@ export class AuthService {
   }
 
   hasRole(role: string): boolean {
+    // Usar el signal de roles para reactividad
+    const roles = this.userRolesSignal();
+    if (roles.length > 0) {
+      return roles.includes(role);
+    }
+    // Fallback: leer de localStorage si el signal está vacío
     const userData = this.getUserData();
-    return userData?.roles?.includes(role) || false;
+    if (userData?.roles) {
+      // Actualizar el signal si encontramos roles en localStorage
+      this.userRolesSignal.set(userData.roles);
+      return userData.roles.includes(role);
+    }
+    return false;
   }
 
   createUser(userData: CreateUserRequest): Observable<CreateUserResponse> {
@@ -139,7 +182,7 @@ export class AuthService {
     if (!token) {
       return throwError(() => new Error('No hay token disponible'));
     }
-    
+
     // El interceptor HTTP agregará automáticamente el header Authorization
     return this.http.get<{ valid: boolean; message: string }>(`${this.apiUrl}/auth/validate`)
       .pipe(

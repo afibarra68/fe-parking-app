@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface Page<T> {
   content: T[];
@@ -16,14 +17,8 @@ export interface Page<T> {
 export interface UserRole {
   userRoleId?: number;
   appUserId?: number;
-  firstName?: string;
-  lastName?: string;
-  secondName?: string;
-  secondLastname?: string;
   numberIdentity?: string;
-  role?: string;
-  companyCompanyId?: number;
-  companyName?: string;
+  role?: EnumResource | string; // Puede ser EnumResource del backend o string (id)
 }
 
 export interface UserRolePageResponse {
@@ -36,9 +31,27 @@ export interface UserRolePageResponse {
   last: boolean;
 }
 
-export interface CreateUserRole {
-  numberIdentity: string;
-  role: string;
+export interface DUser {
+  appUserId?: number;
+  firstName?: string;
+  secondName?: string;
+  lastName?: string;
+  secondLastName?: string;
+  numberIdentity: string; // Required
+  sha?: string;
+  password?: string;
+  phoneNumber?: string;
+  salt?: string;
+  accessCredential?: EnumResource;
+  loginLimit?: string;
+  companyCompanyId?: number;
+  processorId?: string;
+}
+
+export interface DUserRole {
+  userRoleId?: number;
+  user: DUser; // Required
+  role: EnumResource; // Required
 }
 
 @Injectable({
@@ -72,13 +85,13 @@ export class UserRoleService {
   }
 
   // Crear relación usuario-rol
-  create(userRole: CreateUserRole): Observable<void> {
+  create(userRole: DUserRole): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/user_role`, userRole);
   }
 
   // Actualizar relación usuario-rol
-  update(userRoleId: number, userRole: CreateUserRole): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/user_role/${userRoleId}`, userRole);
+  update(userRole: DUserRole): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/user_role`, userRole);
   }
 
   // Eliminar relación usuario-rol

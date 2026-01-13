@@ -2,11 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface Printer {
   printerId?: number;
   printerName: string;
-  printerType?: string; // COM, WINDOWS, NETWORK
+  printerType?: string | EnumResource; // COM, WINDOWS, NETWORK o EnumResource
+  paperType?: string | EnumResource; // E58MM, E88MM o EnumResource
   connectionString?: string; // COM port, printer name, or network address
   isActive?: boolean;
   companyCompanyId?: number;

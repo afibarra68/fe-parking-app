@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { UserPrinterTypeService, UserPrinterType, UserPrinterTypePageResponse } from '../../../core/services/user-printer-type.service';
 import { UserService, User } from '../../../core/services/user.service';
+import { PrinterService } from '../../../core/services/printer.service';
+import { EnumService, EnumResource } from '../../../core/services/enum.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -37,27 +39,23 @@ export class UserPrinterTypesComponent implements OnInit, OnDestroy {
   showForm = false;
   editingUserPrinterType: UserPrinterType | null = null;
   error: string | null = null;
-  
+
   // Paginación
   page: number = 0;
   size: number = environment.rowsPerPage || 10;
   first = 0;
-  
+
   private subscription?: Subscription;
 
   // Opciones para selects
   userOptions: SelectItem[] = [];
-  printerTypes: SelectItem[] = [
-    { label: 'COM', value: 'COM' },
-    { label: 'WINDOWS', value: 'WINDOWS' },
-    { label: 'NETWORK', value: 'NETWORK' }
-  ];
+  printerTypes: SelectItem[] = [];
 
   // Configuración de columnas para la tabla
   cols: TableColumn[] = [
     { field: 'userPrinterTypeId', header: 'ID', width: '80px' },
     { field: 'userName', header: 'Usuario', width: '200px' },
-    { field: 'printerType', header: 'Tipo Impresora', width: '150px' },
+    { field: 'printerTypeDisplay', header: 'Tipo Impresora', width: '150px' },
     { field: 'isEnabled', header: 'Habilitado', width: '120px' }
   ];
 
@@ -74,6 +72,8 @@ export class UserPrinterTypesComponent implements OnInit, OnDestroy {
   constructor(
     private userPrinterTypeService: UserPrinterTypeService,
     private userService: UserService,
+    private printerService: PrinterService,
+    private enumService: EnumService,
     private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
@@ -91,8 +91,29 @@ export class UserPrinterTypesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadPrinterTypes();
     this.loadUsers();
     this.loadUserPrinterTypes();
+  }
+
+  loadPrinterTypes(): void {
+    this.enumService.getEnumByName('EPrinterType').subscribe({
+      next: (types: EnumResource[]) => {
+        this.printerTypes = types.map(type => ({
+          label: type.description || type.id,
+          value: type.id
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar tipos de impresora:', err);
+        // Fallback a valores hardcodeados si falla
+        this.printerTypes = [
+          { label: 'COM', value: 'COM' },
+          { label: 'WINDOWS', value: 'WINDOWS' },
+          { label: 'NETWORK', value: 'NETWORK' }
+        ];
+      }
+    });
   }
 
   loadUsers(): void {
@@ -117,20 +138,21 @@ export class UserPrinterTypesComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     this.error = null;
-    
+
     const filters: any = {
       userUserId: this.searchForm.value.userUserId || undefined,
       printerType: this.searchForm.value.printerType || undefined,
       isEnabled: this.searchForm.value.isEnabled !== null ? this.searchForm.value.isEnabled : undefined
     };
-    
+
     this.subscription = this.userPrinterTypeService.getPageable(this.page, this.size, filters)
       .subscribe({
         next: (data: UserPrinterTypePageResponse) => {
-          // Enriquecer datos con nombres
+          // Enriquecer datos con nombres y formatear printerType
           const enrichedData = data.content.map(item => ({
             ...item,
-            userName: this.getUserName(item.userUserId)
+            userName: this.getUserName(item.userUserId),
+            printerTypeDisplay: this.getPrinterTypeDisplay(item.printerType)
           }));
 
           this.tableDataSubject.next({
@@ -268,6 +290,13 @@ export class UserPrinterTypesComponent implements OnInit, OnDestroy {
     this.size = event.rows || environment.rowsPerPage || 10;
     this.first = event.first || 0;
     this.loadUserPrinterTypes();
+  }
+
+  getPrinterTypeDisplay(printerType: string | undefined): string {
+    if (!printerType) return '';
+    // Buscar la descripción en printerTypes
+    const typeOption = this.printerTypes.find(t => t.value === printerType);
+    return typeOption?.label || printerType;
   }
 }
 

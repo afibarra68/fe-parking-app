@@ -6,18 +6,14 @@ import { EnumResource } from './enum.service';
 
 export interface BillingPrice {
   billingPriceId?: number;
-  status?: EnumResource | string | null; // Puede ser EnumResource, string (id) o null
-  dateStartDisabled?: string;
-  coverType?: string;
-  applyDiscount?: boolean;
-  discountDiscountId?: number;
+  status?: EnumResource | string | null;
+  dateStartDisabled?: string; // LocalDate from backend as string (ISO format)
   companyCompanyId?: number;
   businessServiceBusinessServiceId?: number;
-  start?: number; // DEPRECATED
-  end?: number; // DEPRECATED
-  hours?: number;
-  mount?: number;
-  tipoVehiculo?: EnumResource | string | null; // Puede ser EnumResource, string (id) o null
+  amountByHour?: number;
+  easyCoverMode?: boolean;
+  basicVehicleType?: EnumResource | string | null;
+  vehicleType?: EnumResource | string | null;
 }
 
 export interface BillingPricePageResponse {
@@ -36,7 +32,7 @@ export class BillingPriceService {
   private apiUrl = environment.apiAuthJwt;
 
   // Listar con paginación
-  getPageable(page: number, size: number, filters?: { status?: string; companyCompanyId?: number; tipoVehiculo?: string }): Observable<BillingPricePageResponse> {
+  getPageable(page: number, size: number, filters?: { status?: string; companyCompanyId?: number }): Observable<BillingPricePageResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -47,24 +43,18 @@ export class BillingPriceService {
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
     }
-    if (filters?.tipoVehiculo) {
-      params = params.set('tipoVehiculo', filters.tipoVehiculo);
-    }
 
     return this.http.get<BillingPricePageResponse>(`${this.apiUrl}/billing-prices/pageable`, { params });
   }
 
   // Listar queryable (sin paginación, para dropdowns)
-  getList(filters?: { status?: string; companyCompanyId?: number; tipoVehiculo?: string }): Observable<BillingPrice[]> {
+  getList(filters?: { status?: string; companyCompanyId?: number }): Observable<BillingPrice[]> {
     let params = new HttpParams();
     if (filters?.status) {
       params = params.set('status', filters.status);
     }
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
-    }
-    if (filters?.tipoVehiculo) {
-      params = params.set('tipoVehiculo', filters.tipoVehiculo);
     }
     return this.http.get<BillingPrice[]>(`${this.apiUrl}/billing-prices`, { params });
   }

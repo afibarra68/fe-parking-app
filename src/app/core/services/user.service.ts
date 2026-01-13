@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface Page<T> {
   content: T[];
@@ -23,8 +24,9 @@ export interface User {
   processorId?: string;
   sha?: string;
   salt?: string;
-  accessCredential?: string;
+  accessCredential?: string | EnumResource; // Puede ser string (id) o EnumResource del backend
   accessLevel?: string;
+  loginLimit?: string; // LocalDate from backend as string (ISO format)
   companyCompanyId?: number;
   companyName?: string;
 }

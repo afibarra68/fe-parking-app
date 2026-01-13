@@ -66,6 +66,10 @@
     [modal]="true"
     [style]="{width: '600px'}"
     [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    [closeOnEscape]="true"
     (onHide)="cancelForm()">
     <form [formGroup]="form" (ngSubmit)="submitForm()">
       <div class="form-group">

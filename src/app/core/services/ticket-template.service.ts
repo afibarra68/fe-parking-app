@@ -2,16 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { EnumResource } from './enum.service';
 
 export interface TicketTemplate {
   ticketTemplateId?: number;
   template?: string; // tirilla - contenido del template ESC/POS
-  printerType?: string; // tipo de impresora para imprimir (COM, WINDOWS, NETWORK)
-  ticketType?: string; // tipo de tirilla (INGRESO, SALIDA, FACTURA, COMPROBANTE_INGRESO)
+  ticketType?: string | EnumResource; // tipo de tirilla (INGRESO, SALIDA, FACTURA, COMPROBANTE_INGRESO)
   invoice?: string; // factura - template para facturas
   entryReceipt?: string; // comprobante de ingreso - template para comprobantes de ingreso
   companyCompanyId?: number;
   userUserId?: number;
+  printerPrinterId?: number; // relación con la impresora
   createdDate?: string;
   updatedDate?: string;
 }

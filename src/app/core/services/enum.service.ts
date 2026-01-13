@@ -36,14 +36,5 @@ export class EnumService {
     return this.http.get<EnumResource[]>(`${this.apiUrl}/enums/${enumName}`);
   }
 
-  /**
-   * Obtiene cualquier enum por su nombre completo de clase
-   * @param enumClass Nombre completo de la clase del enum
-   */
-  getEnumByClass(enumClass: string): Observable<EnumResource[]> {
-    return this.http.get<EnumResource[]>(`${this.apiUrl}/enums`, {
-      params: { enumClass }
-    });
-  }
 }
 

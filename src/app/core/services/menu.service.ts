@@ -31,6 +31,12 @@ export class MenuService {
       visible: true
     },
     {
+      label: 'Historial de Suscripciones',
+      icon: 'pi pi-history',
+      routerLink: '/administration/subscription-history-status',
+      visible: true
+    },
+    {
       label: 'Servicios de Negocio',
       icon: 'pi pi-briefcase',
       routerLink: '/administration/business-service',

@@ -17,7 +17,37 @@ import { ErrorComponent } from '../error/error.component';
   ],
   template: `
     <div class="p-field p-col-12 p-md-6 p-lg-3 p-pt-3">
-      <span class="p-float-label">
+      @if (label && !floatLabel) {
+        <label class="calendar-label">
+          {{ label }}
+          @if (control && control.errors?.['required']) {
+            <span style="font-weight: 900;">*</span>
+          }
+        </label>
+      }
+      @if (floatLabel) {
+        <span class="p-float-label">
+          <p-datepicker
+            [formControl]="control"
+            [showIcon]="true"
+            [readonlyInput]="true"
+            [showButtonBar]="showButtonBar"
+            [minDate]="minDate"
+            [maxDate]="maxDate"
+            [defaultDate]="minDate"
+            [showTime]="showTime"
+            [hourFormat]="hourFormat"
+            dateFormat="dd/mm/yy"
+            (onSelect)="onSelect.emit($event)">
+          </p-datepicker>
+          <label for="controltext">
+            {{ label }}
+            @if (control && control.errors?.['required']) {
+              <span style="font-weight: 900;">*</span>
+            }
+          </label>
+        </span>
+      } @else {
         <p-datepicker
           [formControl]="control"
           [showIcon]="true"
@@ -31,13 +61,7 @@ import { ErrorComponent } from '../error/error.component';
           dateFormat="dd/mm/yy"
           (onSelect)="onSelect.emit($event)">
         </p-datepicker>
-        <label for="controltext">
-          {{ label }}
-          @if (control && control.errors?.['required']) {
-            <span style="font-weight: 900;">*</span>
-          }
-        </label>
-      </span>
+      }
       <app-error [input]="control"></app-error>
     </div>
   `,
@@ -48,6 +72,18 @@ import { ErrorComponent } from '../error/error.component';
     .w-full {
       width: 100%;
     }
+    .calendar-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #555;
+      font-size: 0.875rem;
+    }
+    ::ng-deep {
+      .p-datepicker {
+        width: 100%;
+      }
+    }
   `]
 })
 export class CalendarComponent implements OnInit, ControlValueAccessor {
@@ -57,12 +93,11 @@ export class CalendarComponent implements OnInit, ControlValueAccessor {
   @Input() label = '';
   @Input() minDate: Date | null = null;
   @Input() maxDate: Date | null = null;
-  @Input() yearNavigator = false;
   @Input() showTimeOnly = false;
   @Input() stepMinute = 1;
   @Input() showButtonBar = true;
-  @Input() yearRange: string = '';
   @Input() hourFormat: '12' | '24' = '24';
+  @Input() floatLabel: boolean = true; // Por defecto usa float label, pero se puede desactivar
 
   es: any;
 
@@ -73,12 +108,6 @@ export class CalendarComponent implements OnInit, ControlValueAccessor {
   constructor(@Self() @Optional() public ngControl: NgControl) {
     if (this.ngControl) {
       ngControl.valueAccessor = this;
-    }
-
-    if (!this.yearRange) {
-      const beginYear = new Date();
-      beginYear.setFullYear(1950);
-      this.yearRange = `${beginYear.getFullYear()}:${new Date().getFullYear()}`;
     }
 
     this.es = {
