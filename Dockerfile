@@ -7,8 +7,12 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci
+# Instalar dependencias (regenera package-lock.json si está desactualizado)
+RUN if [ -f package-lock.json ]; then \
+      npm ci || (echo "⚠️  package-lock.json desactualizado, regenerando..." && npm install); \
+    else \
+      echo "⚠️  package-lock.json no existe, generando..." && npm install; \
+    fi
 
 # Copiar código fuente
 COPY . .
@@ -25,15 +29,13 @@ WORKDIR /app
 # Copiar package.json y package-lock.json para instalar dependencias
 COPY --from=builder /app/package*.json /app/
 
-# Verificar que package-lock.json existe antes de instalar
-RUN if [ ! -f package-lock.json ]; then \
-      echo "⚠️  package-lock.json no encontrado, generando uno nuevo..." && \
-      npm install --package-lock-only --only=production; \
-    fi
-
 # Instalar solo dependencias de producción necesarias para el servidor
-# Esto incluye: express, http-proxy-middleware y todas las dependencias de Angular SSR
-RUN npm ci --only=production && \
+# Usa npm install como fallback si npm ci falla (cuando el lock file está desactualizado)
+RUN if [ -f package-lock.json ]; then \
+      npm ci --only=production || (echo "⚠️  package-lock.json desactualizado, usando npm install..." && npm install --only=production); \
+    else \
+      echo "⚠️  package-lock.json no encontrado, usando npm install..." && npm install --only=production; \
+    fi && \
     npm cache clean --force
 
 # Verificar que las dependencias críticas estén instaladas
