@@ -14,7 +14,8 @@ Esta guía explica cómo desplegar la aplicación T-Parking usando Docker con No
 
 - `Dockerfile`: Define la construcción de la imagen Docker con Node.js (soporta SSR y contenido dinámico)
 - `docker-compose.yml`: Orquesta el despliegue del contenedor
-- `src/server.ts`: Servidor Express con SSR y proxy para API
+- `src/server.ts`: Servidor Express con SSR (sin middlewares de proxy)
+- `nginx.conf`: Configuración de Nginx como reverse proxy para API
 - `.dockerignore`: Archivos excluidos del contexto de Docker
 
 ### ¿Por qué Node.js en lugar de Nginx?
@@ -70,12 +71,17 @@ docker rm t-parking-app
 El proxy está configurado para redirigir las peticiones de `/mt-api` a `http://10.116.0.5:9000`.
 
 ### Desarrollo
-- Archivo: `proxy.conf.json`
+- Archivo: `proxy.conf.json` (usado por Angular CLI)
 - Target: `http://localhost:9000` (desarrollo) o `http://10.116.0.5:9000` (producción)
 
 ### Producción
-- Archivo: `src/server.ts` (Express con http-proxy-middleware)
-- Location: `/mt-api` → `http://10.116.0.5:9000` (configurable con variable `API_URL`)
+- **Nginx**: Reverse proxy para `/mt-api` → `http://10.116.0.5:9000`
+  - Archivo: `nginx.conf`
+  - Más eficiente que middlewares de Node.js
+  - Mejor rendimiento y escalabilidad
+- **Node.js**: Solo maneja SSR y archivos estáticos (sin middlewares de proxy)
+  - Archivo: `src/server.ts`
+  - Separación de responsabilidades
 
 ## Verificación
 

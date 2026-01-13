@@ -40,9 +40,9 @@ RUN if [ -f package-lock.json ]; then \
 
 # Verificar que las dependencias críticas estén instaladas
 RUN echo "Verificando dependencias del servidor..." && \
-    npm list express http-proxy-middleware @angular/ssr express 2>/dev/null || echo "Algunas dependencias pueden estar en el bundle" && \
+    npm list express @angular/ssr 2>/dev/null || echo "Algunas dependencias pueden estar en el bundle" && \
     # Verificar que los módulos pueden ser requeridos
-    node -e "try { require('express'); require('http-proxy-middleware'); console.log('✅ Dependencias del servidor verificadas correctamente'); } catch(e) { console.error('❌ Error:', e.message); process.exit(1); }"
+    node -e "try { require('express'); console.log('✅ Dependencias del servidor verificadas correctamente'); } catch(e) { console.error('❌ Error:', e.message); process.exit(1); }"
 
 # Copiar archivos construidos desde el stage anterior
 COPY --from=builder /app/dist/t-parking /app/dist/t-parking

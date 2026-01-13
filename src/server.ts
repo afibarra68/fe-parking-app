@@ -4,42 +4,17 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import express, { Request, Response } from 'express';
+import express from 'express';
 import { join } from 'node:path';
-// Use require to avoid TypeScript compilation issues during Angular build
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-// Configuración del proxy para API - Soporta contenido dinámico
-const apiUrl = process.env['API_URL'] || 'http://10.116.0.5:9000';
-const apiProxy = createProxyMiddleware({
-  target: apiUrl,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/mt-api': '', // Elimina /mt-api del path antes de enviar al backend
-  },
-  logLevel: process.env['NODE_ENV'] === 'production' ? 'error' : 'debug',
-  onProxyReq: (proxyReq: any, req: Request, res: Response) => {
-    // Log de peticiones en desarrollo
-    if (process.env['NODE_ENV'] !== 'production') {
-      console.log(`[Proxy] ${req.method} ${req.url} -> ${apiUrl}${req.url.replace('/mt-api', '')}`);
-    }
-  },
-  onError: (err: Error, req: Request, res: Response) => {
-    console.error('[Proxy Error]', err.message);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Proxy error', message: err.message });
-    }
-  },
-} as any);
-
-// Proxy para /mt-api - Redirige al backend configurado
-app.use('/mt-api', apiProxy);
+// Nota: El proxy para /mt-api se maneja con Nginx en producción
+// En desarrollo, Angular CLI usa proxy.conf.json
+// Node.js solo maneja SSR y archivos estáticos
 
 /**
  * Serve static files from /browser
