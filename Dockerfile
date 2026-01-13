@@ -22,14 +22,27 @@ FROM node:20-alpine
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar package.json para instalar solo dependencias de producción
+# Copiar package.json y package-lock.json para instalar dependencias
 COPY --from=builder /app/package*.json /app/
 
-# Instalar solo dependencias de producción (incluye http-proxy-middleware)
-RUN npm ci --only=production && npm cache clean --force
+# Instalar solo dependencias de producción necesarias para el servidor
+# Esto incluye: express, http-proxy-middleware y todas las dependencias de Angular SSR
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Verificar que las dependencias críticas estén instaladas
+RUN echo "Verificando dependencias del servidor..." && \
+    npm list express http-proxy-middleware @angular/ssr express 2>/dev/null || echo "Algunas dependencias pueden estar en el bundle" && \
+    # Verificar que los módulos pueden ser requeridos
+    node -e "try { require('express'); require('http-proxy-middleware'); console.log('✅ Dependencias del servidor verificadas correctamente'); } catch(e) { console.error('❌ Error:', e.message); process.exit(1); }"
 
 # Copiar archivos construidos desde el stage anterior
 COPY --from=builder /app/dist/t-parking /app/dist/t-parking
+
+# Verificar que el servidor compilado existe y es ejecutable
+RUN test -f dist/t-parking/server/server.mjs && \
+    echo "✅ Servidor compilado encontrado" || \
+    (echo "❌ Error: Servidor compilado no encontrado" && exit 1)
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S nodejs && \
