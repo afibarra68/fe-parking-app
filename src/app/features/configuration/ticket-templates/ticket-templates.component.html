@@ -74,6 +74,40 @@
         </div>
 
         <div class="form-group">
+          <label for="imageUpload">Agregar Imagen al Template</label>
+          <div class="image-upload-container">
+            <input type="file" id="imageUpload" accept="image/*" (change)="onImageSelected($event)" 
+              class="file-input" style="display: none;">
+            <div class="image-upload-controls">
+              <p-button label="Seleccionar Imagen" icon="pi pi-image" 
+                (onClick)="selectImageFile()" 
+                styleClass="p-button-outlined" [disabled]="loading">
+              </p-button>
+              @if (selectedImage) {
+              <div class="image-preview-container">
+                <img [src]="selectedImagePreview" alt="Vista previa" class="image-preview">
+                <div class="image-actions">
+                  <p-button label="Insertar en Template" icon="pi pi-plus" 
+                    (onClick)="insertImageIntoTemplate()" 
+                    styleClass="p-button-sm" 
+                    [disabled]="!imageEscPosCode || loading">
+                  </p-button>
+                  <p-button icon="pi pi-times" (onClick)="clearImage()" 
+                    styleClass="p-button-text p-button-danger p-button-sm" 
+                    [title]="'Eliminar imagen'">
+                  </p-button>
+                </div>
+              </div>
+              }
+            </div>
+            <small class="p-info">
+              Formatos soportados: PNG, JPG, GIF. La imagen se convertirá automáticamente a formato ESC/POS.
+              Máximo recomendado: 300px de ancho para impresoras de 58mm, 400px para 80mm.
+            </small>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label for="template">Template Excel POS *</label>
           <textarea id="template" formControlName="template" rows="12" placeholder="Contenido del template Excel POS..."
             class="p-inputtext template-textarea">
@@ -83,6 +117,9 @@
             El template es requerido
           </small>
           }
+          <small class="p-info">
+            <strong>Tip:</strong> Puedes usar el botón "Insertar Imagen" después de seleccionar una imagen para agregarla al template en la posición del cursor.
+          </small>
         </div>
 
         <div class="form-actions">

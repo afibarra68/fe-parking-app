@@ -1,7 +1,9 @@
-# Dockerfile optimizado para Angular 20 en Cloud Run
-# Opción 1: Servir como aplicación estática con Nginx (recomendado)
+# Dockerfile optimizado para Angular 20 con Nginx
+# Multi-stage build: Build + Runtime
 
+# ============================================
 # Stage 1: Build
+# ============================================
 FROM node:20-alpine AS build
 WORKDIR /app
 
@@ -22,10 +24,18 @@ RUN if [ "$PRODUCTION" != "true" ]; then \
 COPY package*.json ./
 
 # Instalar dependencias (npm ci es más rápido y determinístico)
-RUN npm ci --only=production=false
+RUN npm ci --only=production=false && \
+    echo "✓ Dependencias instaladas"
 
 # Copiar código fuente
 COPY . .
+
+# Validar que nginx.conf existe antes del build
+RUN if [ ! -f "nginx.conf" ]; then \
+        echo "ERROR: nginx.conf no encontrado"; \
+        exit 1; \
+    fi && \
+    echo "✓ nginx.conf encontrado"
 
 # Compilar la aplicación para producción
 # Con Angular 20, esto genera dist/t-parking/browser y dist/t-parking/server
@@ -43,8 +53,15 @@ RUN if [ ! -d "/app/dist/t-parking/browser" ]; then \
     fi && \
     echo "✓ Build completado correctamente"
 
+# ============================================
 # Stage 2: Runtime con Nginx
+# ============================================
 FROM nginx:alpine
+
+# Etiquetas de metadatos
+LABEL maintainer="WebStore Team"
+LABEL description="T-Parking Frontend Application"
+LABEL version="0.0.6-SNAPSHOT"
 
 # Copiar archivos compilados del cliente (browser)
 # Angular 20 genera los archivos estáticos en dist/t-parking/browser
@@ -53,23 +70,36 @@ COPY --from=build /app/dist/t-parking/browser /usr/share/nginx/html
 # Renombrar index.csr.html a index.html si existe (Angular 20 genera index.csr.html)
 RUN if [ -f /usr/share/nginx/html/index.csr.html ]; then \
         cp /usr/share/nginx/html/index.csr.html /usr/share/nginx/html/index.html && \
-        echo "Copied index.csr.html to index.html"; \
+        echo "✓ Copied index.csr.html to index.html"; \
     fi
 
 # Verificar que index.html existe
-RUN ls -la /usr/share/nginx/html/ | head -10 && \
-    if [ ! -f /usr/share/nginx/html/index.html ]; then \
+RUN if [ ! -f /usr/share/nginx/html/index.html ]; then \
         echo "ERROR: index.html not found!"; \
         echo "Files in /usr/share/nginx/html:"; \
         ls -la /usr/share/nginx/html/; \
         exit 1; \
-    fi
+    fi && \
+    echo "✓ index.html verificado"
 
-# Copiar configuración de Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copiar configuración de Nginx desde el stage de build
+COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Validar que la configuración de nginx es válida
+RUN nginx -t && \
+    echo "✓ Configuración de Nginx válida"
+
+# Crear directorio para logs si no existe
+RUN mkdir -p /var/log/nginx && \
+    chown -R nginx:nginx /var/log/nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
 
 # Exponer puerto 80
 EXPOSE 80
 
-# Iniciar Nginx
+# Healthcheck para verificar que el contenedor está funcionando
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Iniciar Nginx en modo foreground
 CMD ["nginx", "-g", "daemon off;"]
