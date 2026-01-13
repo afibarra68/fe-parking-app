@@ -13,7 +13,7 @@ import { MessageModule } from 'primeng/message';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { SelectItem } from 'primeng/api';
 import { filter, switchMap } from 'rxjs/operators';

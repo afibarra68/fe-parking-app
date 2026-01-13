@@ -10,7 +10,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SharedModule } from '../../../shared/shared-module';
 import { TableColumn } from '../../../shared/components/table/table.component';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
 import { SelectItem } from 'primeng/api';
 import { filter, switchMap, catchError } from 'rxjs/operators';

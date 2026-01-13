@@ -4,8 +4,9 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { join } from 'node:path';
+// @ts-ignore - http-proxy-middleware types may not be available during build
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
@@ -22,17 +23,19 @@ const apiProxy = createProxyMiddleware({
     '^/mt-api': '', // Elimina /mt-api del path antes de enviar al backend
   },
   logLevel: process.env['NODE_ENV'] === 'production' ? 'error' : 'debug',
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq: any, req: Request, res: Response) => {
     // Log de peticiones en desarrollo
     if (process.env['NODE_ENV'] !== 'production') {
       console.log(`[Proxy] ${req.method} ${req.url} -> ${apiUrl}${req.url.replace('/mt-api', '')}`);
     }
   },
-  onError: (err, req, res) => {
+  onError: (err: Error, req: Request, res: Response) => {
     console.error('[Proxy Error]', err.message);
-    res.status(500).json({ error: 'Proxy error', message: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Proxy error', message: err.message });
+    }
   },
-});
+} as any);
 
 // Proxy para /mt-api - Redirige al backend configurado
 app.use('/mt-api', apiProxy);
