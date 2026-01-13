@@ -9,4 +9,3 @@ export const environment = {
     apiAuthJwt: '/mt-api',
     apiUrl: '/mt-api'
 };
-

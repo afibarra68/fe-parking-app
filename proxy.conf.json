@@ -7,6 +7,15 @@
     "pathRewrite": {
       "^/mt-api": ""
     }
+  },
+  "/mt-api-prod": {
+    "target": "http://10.116.0.5:9000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/mt-api-prod": ""
+    }
   }
 }
 

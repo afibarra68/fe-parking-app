@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  t-parking:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: t-parking-app
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    networks:
+      - t-parking-network
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - API_URL=http://10.116.0.5:9000
+
+networks:
+  t-parking-network:
+    driver: bridge

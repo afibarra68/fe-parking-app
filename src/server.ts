@@ -6,11 +6,36 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+// Configuración del proxy para API - Soporta contenido dinámico
+const apiUrl = process.env['API_URL'] || 'http://10.116.0.5:9000';
+const apiProxy = createProxyMiddleware({
+  target: apiUrl,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/mt-api': '', // Elimina /mt-api del path antes de enviar al backend
+  },
+  logLevel: process.env['NODE_ENV'] === 'production' ? 'error' : 'debug',
+  onProxyReq: (proxyReq, req, res) => {
+    // Log de peticiones en desarrollo
+    if (process.env['NODE_ENV'] !== 'production') {
+      console.log(`[Proxy] ${req.method} ${req.url} -> ${apiUrl}${req.url.replace('/mt-api', '')}`);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('[Proxy Error]', err.message);
+    res.status(500).json({ error: 'Proxy error', message: err.message });
+  },
+});
+
+// Proxy para /mt-api - Redirige al backend configurado
+app.use('/mt-api', apiProxy);
 
 /**
  * Serve static files from /browser
@@ -24,7 +49,7 @@ app.use(
 );
 
 /**
- * Handle all other requests by rendering the Angular application.
+ * Handle all other requests by rendering the Angular application (SSR).
  */
 app.use((req, res, next) => {
   angularApp
