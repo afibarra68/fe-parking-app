@@ -5,6 +5,6 @@ export const environment = {
     activeMocks: false,
     // Conexión directa al backend sin pasar por Nginx (evita 302)
     // Las peticiones van directamente al backend sin proxy
-    apiAuthJwt: 'https://adminparquear-z6mc5.ondigitalocean.app',
-    apiUrl: 'https://adminparquear-z6mc5.ondigitalocean.app'
+    apiAuthJwt: 'https://api-flux.alparquear.com',
+    apiUrl: 'https://api-flux.alparquear.com'
 };
