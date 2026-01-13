@@ -1,5 +1,6 @@
-# Dockerfile optimizado para Angular 20 con Nginx
+# Dockerfile para Angular 20 con Nginx
 # Multi-stage build: Build + Runtime
+# Optimizado para Digital Ocean
 
 # ============================================
 # Stage 1: Build
@@ -9,7 +10,7 @@ WORKDIR /app
 
 # Build arguments para validación de producción
 ARG NODE_ENV=production
-ARG PRODUCTION=false
+ARG PRODUCTION=true
 ENV NODE_ENV=$NODE_ENV
 ENV PRODUCTION=$PRODUCTION
 

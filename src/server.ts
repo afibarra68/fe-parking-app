@@ -13,11 +13,6 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Obtener token de identidad de Google Cloud para autenticación con el backend
- * El token se cachea para evitar múltiples llamadas
- */
-
-/**
  * Serve static files from /browser
  */
 app.use(
@@ -56,6 +51,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
 }
 
 /**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
+ * Request handler used by the Angular CLI (for dev-server and during build).
  */
 export const reqHandler = createNodeRequestHandler(app);

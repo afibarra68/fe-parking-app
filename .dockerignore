@@ -58,7 +58,6 @@ Thumbs.db
 # CI/CD (no necesario en la imagen)
 .github
 .gitlab-ci.yml
-cloudbuild.yaml
 
 # Docker files (no copiar a sí mismo)
 Dockerfile*
