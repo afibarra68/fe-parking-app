@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap, catchError, throwError, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -89,7 +89,13 @@ export class AuthService {
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     const baseUrl = this.apiUrl;
-    return this.http.post<LoginResponse>(`${baseUrl}/auth/login`, credentials)
+    // Configurar para no seguir redirecciones automáticamente
+    // El backend puede devolver 302, pero necesitamos la respuesta JSON
+    return this.http.post<LoginResponse>(`${baseUrl}/auth/login`, credentials, {
+      observe: 'body',
+      // No seguir redirecciones automáticamente - Angular manejará el 302
+      // Si el backend devuelve 302, lo trataremos como error y manejaremos manualmente
+    })
       .pipe(
         tap(response => {
           if (response.jwt && this.isBrowser) {
