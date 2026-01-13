@@ -6,10 +6,9 @@ import {
 } from '@angular/ssr/node';
 import express, { Request, Response } from 'express';
 import { join } from 'node:path';
-// http-proxy-middleware v3 includes its own types
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error - Types are included in the package but may not be resolved during build
-import { createProxyMiddleware } from 'http-proxy-middleware';
+// Use require to avoid TypeScript compilation issues during Angular build
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
