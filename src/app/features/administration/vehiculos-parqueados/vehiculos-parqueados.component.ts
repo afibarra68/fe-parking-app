@@ -33,9 +33,10 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
   statusOptions: SelectItem[] = [];
+  basicVehicleTypeOptions: SelectItem[] = [];
 
-  // Cache para mapeo rápido de tipoVehiculo
-  private tipoVehiculoMap = new Map<string, string>();
+  // Cache para mapeo rápido de basicVehicleType
+  private basicVehicleTypeMap = new Map<string, string>();
 
   // Paginación
   page: number = 0;
@@ -44,7 +45,7 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
 
   private subscription?: Subscription;
   private statusSubscription?: Subscription;
-  private tipoVehiculoSubscription?: Subscription;
+  private basicVehicleTypeSubscription?: Subscription;
   private isInitialLoad = true;
 
   private tableDataSubject = new BehaviorSubject<any>({
@@ -76,14 +77,15 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   ) {
     this.searchForm = this.fb.group({
       status: [null],
-      companyCompanyId: [null]
+      companyCompanyId: [null],
+      basicVehicleType: [null]
     });
   }
 
   ngOnInit(): void {
-    // Cargar opciones de estado y tipos de vehículo desde el backend
+    // Cargar opciones de estado y tipos básicos de vehículo desde el backend
     this.loadStatusOptions();
-    this.loadTipoVehiculoOptions();
+    this.loadBasicVehicleTypeOptions();
   }
 
   ngOnDestroy(): void {
@@ -93,8 +95,8 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
     if (this.statusSubscription) {
       this.statusSubscription.unsubscribe();
     }
-    if (this.tipoVehiculoSubscription) {
-      this.tipoVehiculoSubscription.unsubscribe();
+    if (this.basicVehicleTypeSubscription) {
+      this.basicVehicleTypeSubscription.unsubscribe();
     }
   }
 
@@ -120,17 +122,22 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       });
   }
 
-  private loadTipoVehiculoOptions(): void {
-    this.tipoVehiculoSubscription = this.enumService.getEnumByName('ETipoVehiculo')
+  private loadBasicVehicleTypeOptions(): void {
+    this.basicVehicleTypeSubscription = this.enumService.getEnumByName('EBasicTipoVehiculo')
       .pipe(
         catchError(() => of([] as EnumResource[]))
       )
       .subscribe({
         next: (tipos: EnumResource[]) => {
+          // Crear opciones para el select
+          this.basicVehicleTypeOptions = tipos.map(tipo => ({
+            label: tipo.description || tipo.id,
+            value: tipo.id
+          }));
           // Crear mapa para acceso rápido
-          this.tipoVehiculoMap.clear();
+          this.basicVehicleTypeMap.clear();
           tipos.forEach(tipo => {
-            this.tipoVehiculoMap.set(tipo.id, tipo.description || tipo.id);
+            this.basicVehicleTypeMap.set(tipo.id, tipo.description || tipo.id);
           });
         }
       });
@@ -150,6 +157,12 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
       ? statusValue.id
       : (typeof statusValue === 'string' ? statusValue : undefined);
 
+    // Extraer el ID de basicVehicleType si es un objeto EnumResource
+    const basicVehicleTypeValue = this.searchForm.value.basicVehicleType;
+    const basicVehicleTypeId = typeof basicVehicleTypeValue === 'object' && basicVehicleTypeValue?.id
+      ? basicVehicleTypeValue.id
+      : (typeof basicVehicleTypeValue === 'string' ? basicVehicleTypeValue : undefined);
+
     const filters: any = {};
     if (statusId) {
       filters.status = statusId;
@@ -157,16 +170,19 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
     if (this.searchForm.value.companyCompanyId) {
       filters.companyCompanyId = this.searchForm.value.companyCompanyId;
     }
+    if (basicVehicleTypeId) {
+      filters.basicVehicleType = basicVehicleTypeId;
+    }
 
     this.subscription = this.vehiculosParqueadosService
       .getPageable(this.page, this.size, filters)
       .subscribe({
         next: (response: Page<VehiculoParqueado>) => {
-          // Formatear status y tipoVehiculo para mostrar en la tabla
+          // Formatear status y basicVehicleType para mostrar en la tabla
           const formattedData = (response.content || []).map(item => ({
             ...item,
             statusDisplay: this.formatStatus(item.status),
-            tipoVehiculoDisplay: this.getTipoVehiculoDescription(item.tipoVehiculo)
+            tipoVehiculoDisplay: this.getBasicVehicleTypeDescription(item.basicVehicleType || item.tipoVehiculo)
           }));
           this.tableDataSubject.next({
             data: formattedData,
@@ -200,7 +216,8 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
     const defaultStatus = this.statusOptions.find(opt => opt.value === 'OPEN')?.value || null;
     this.searchForm.reset({
       status: defaultStatus,
-      companyCompanyId: null
+      companyCompanyId: null,
+      basicVehicleType: null
     });
     this.search();
   }
@@ -259,19 +276,19 @@ export class VehiculosParqueadosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Obtiene la descripción del tipo de vehículo desde el mapa cacheado
+   * Obtiene la descripción del tipo básico de vehículo desde el mapa cacheado
    */
-  getTipoVehiculoDescription(tipoVehiculo: string | EnumResource | null | undefined): string {
-    if (!tipoVehiculo) return '-';
+  getBasicVehicleTypeDescription(basicVehicleType: string | EnumResource | null | undefined): string {
+    if (!basicVehicleType) return '-';
 
     // Si es un objeto EnumResource, usar description o id
-    if (typeof tipoVehiculo === 'object' && tipoVehiculo !== null) {
-      return tipoVehiculo.description || tipoVehiculo.id || '-';
+    if (typeof basicVehicleType === 'object' && basicVehicleType !== null) {
+      return basicVehicleType.description || basicVehicleType.id || '-';
     }
 
     // Si es string, buscar en el mapa
-    const tipoVehiculoId = tipoVehiculo;
-    return this.tipoVehiculoMap.get(tipoVehiculoId) || tipoVehiculoId || '-';
+    const basicVehicleTypeId = basicVehicleType;
+    return this.basicVehicleTypeMap.get(basicVehicleTypeId) || basicVehicleTypeId || '-';
   }
 }
 

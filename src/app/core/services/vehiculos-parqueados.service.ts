@@ -33,6 +33,7 @@ export interface VehiculoParqueado {
   serviceTypeServiceTypeId?: number | null;
   appUserAppUserSeller?: number | null;
   tipoVehiculo?: string | EnumResource;
+  basicVehicleType?: string | EnumResource;
 }
 
 @Injectable({
@@ -46,7 +47,7 @@ export class VehiculosParqueadosService {
   getPageable(
     page: number,
     size: number,
-    filters?: { status?: string; companyCompanyId?: number }
+    filters?: { status?: string; companyCompanyId?: number; basicVehicleType?: string }
   ): Observable<Page<VehiculoParqueado>> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -58,6 +59,10 @@ export class VehiculosParqueadosService {
 
     if (filters?.companyCompanyId) {
       params = params.set('companyCompanyId', filters.companyCompanyId.toString());
+    }
+
+    if (filters?.basicVehicleType) {
+      params = params.set('basicVehicleType', filters.basicVehicleType);
     }
 
     return this.http.get<Page<VehiculoParqueado>>(`${this.apiUrl}/open-transactions`, { params });

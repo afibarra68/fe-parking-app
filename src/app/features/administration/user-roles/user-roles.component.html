@@ -143,11 +143,10 @@
       *ngIf="(tableData$ | async) as tableData"
       [cols]="cols"
       [dataTable]="tableData"
-      [hasEdit]="true"
+      [hasEdit]="false"
       [hasDelete]="true"
       [hasDetail]="false"
       [hasReport]="false"
-      (onEdit)="onTableEdit($event)"
       (onDelete)="onTableDelete($event)"
       (pagination)="onTablePagination($event)">
     </app-table-lib>

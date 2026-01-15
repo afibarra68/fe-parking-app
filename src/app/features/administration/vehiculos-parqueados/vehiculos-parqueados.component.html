@@ -15,6 +15,11 @@
         <input id="companyCompanyId" type="number" pInputText formControlName="companyCompanyId"
           placeholder="ID de empresa" />
       </div>
+      <div class="search-field">
+        <app-select-lib formControlName="basicVehicleType" [options]="basicVehicleTypeOptions" label="Tipo de Vehículo" [filter]="true"
+          [showClear]="true" [floatLabel]="false" [appendTo]="'body'">
+        </app-select-lib>
+      </div>
     </div>
     <div class="search-actions">
       <p-button label="Buscar" icon="pi pi-search" (onClick)="search()" [disabled]="loading"
